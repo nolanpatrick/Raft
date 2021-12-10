@@ -7,7 +7,7 @@ cr
 34 35 > . cr
 34 35 = . cr
 cr
--1 0 and . cr
+-1 0 and . cr cr
 -1 -1 and . cr
 0 0 and . cr cr
 -1 0 or . cr

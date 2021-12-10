@@ -5,6 +5,16 @@ Python experimental implementation for proof-of-concept. Bits and pieces will be
 TODO: Definitions, string-print (."), conditionals, variables, arrays, keyboard input
             
 """
+import sys
+
+debug_show_parse = False
+debug_show_stack = False
+
+if "--show-parse" in sys.argv:
+    debug_show_parse = True
+if "--show-stack" in sys.argv:
+    debug_show_stack = True
+
 
 class Token:
     def __init__(self, val, ttype):
@@ -34,7 +44,7 @@ def main():
         and parsing the raw file is much simpler in Python.
         """
         token_list = file_buffer.split()
-        print(token_list)
+        #print(token_list)
 
         program_tokens = []
         main_stack = [] # this will be the main stack for the program.
@@ -43,84 +53,86 @@ def main():
         # Stage: parsing file, taking note of what types are contained
         for ti, tc in enumerate(token_list):
             if tc.isnumeric():
-                print(f"[{ti}] found numeric")
+                if debug_show_parse: print(f"[{ti}] found numeric")
                 if '.' in tc: program_tokens.append(Token(float(tc), 0))
                 else: program_tokens.append(Token(int(tc), 0))
-            elif tc[0] == "-" and tc[1:].isnumeric():
-                print(f"[{ti}] found numeric")
-                if '.' in tc: program_tokens.append(Token(float(tc), 0))
-                else: program_tokens.append(Token(int(tc), 0))
+            elif tc[0] == '-' and len(tc) >= 2:
+                if tc[1:].isnumeric():
+                    if debug_show_parse: print(f"[{ti}] found negative numeric")
+                    if '.' in tc: program_tokens.append(Token(float(tc), 0))
+                    else: program_tokens.append(Token(int(tc), 0))
             elif tc == "+":
-                print(f"[{ti}] found + operator")
+                if debug_show_parse: print(f"[{ti}] found + operator")
                 program_tokens.append(Token(tc, 1))
             elif tc == "-":
-                print(f"[{ti}] found - operator")
+                if debug_show_parse: print(f"[{ti}] found - operator")
                 program_tokens.append(Token(tc, 1))
             elif tc == "*":
-                print(f"[{ti}] found * operator")
+                if debug_show_parse: print(f"[{ti}] found * operator")
                 program_tokens.append(Token(tc, 1))
             elif tc == "/":
-                print(f"[{ti}] found / operator")
+                if debug_show_parse: print(f"[{ti}] found / operator")
                 program_tokens.append(Token(tc, 1))
             elif tc == ".":
-                print(f"[{ti}] found . operator")
+                if debug_show_parse: print(f"[{ti}] found . operator")
                 program_tokens.append(Token(tc, 1))
             elif tc == "swap":
-                print(f"[{ti}] found swap operator")
+                if debug_show_parse: print(f"[{ti}] found swap operator")
                 program_tokens.append(Token(tc, 1))
             elif tc == "dup":
-                print(f"[{ti}] found dup operator")
+                if debug_show_parse: print(f"[{ti}] found dup operator")
                 program_tokens.append(Token(tc, 1))
             elif tc == "drop":
-                print(f"[{ti}] found drop operator")
+                if debug_show_parse: print(f"[{ti}] found drop operator")
                 program_tokens.append(Token(tc, 1))
             elif tc == "over":
-                print(f"[{ti}] found over operator")
+                if debug_show_parse: print(f"[{ti}] found over operator")
                 program_tokens.append(Token(tc, 1))
             elif tc == "rot":
-                print(f"[{ti}] found orot operator")
+                if debug_show_parse: print(f"[{ti}] found orot operator")
                 program_tokens.append(Token(tc, 1))
             elif tc == "emit":
-                print(f"[{ti}] found emit operator")
+                if debug_show_parse: print(f"[{ti}] found emit operator")
                 program_tokens.append(Token(tc, 1))
             elif tc == "cr":
-                print(f"[{ti}] found cr operator")
+                if debug_show_parse: print(f"[{ti}] found cr operator")
                 program_tokens.append(Token(tc, 1))
             elif tc == "+!":
-                print(f"[{ti}] found +! operator")
+                if debug_show_parse: print(f"[{ti}] found +! operator")
                 program_tokens.append(Token(tc, 1))
             elif tc == "=":
-                print(f"[{ti}] found = operator")
+                if debug_show_parse: print(f"[{ti}] found = operator")
                 program_tokens.append(Token(tc, 1))
             elif tc == "<":
-                print(f"[{ti}] found < operator")
+                if debug_show_parse: print(f"[{ti}] found < operator")
                 program_tokens.append(Token(tc, 1))
             elif tc == ">":
-                print(f"[{ti}] found > operator")
+                if debug_show_parse: print(f"[{ti}] found > operator")
                 program_tokens.append(Token(tc, 1))
             elif tc == "and":
-                print(f"[{ti}] found and operator")
+                if debug_show_parse: print(f"[{ti}] found and operator")
                 program_tokens.append(Token(tc, 1))
             elif tc == "or":
-                print(f"[{ti}] found or operator")
+                if debug_show_parse: print(f"[{ti}] found or operator")
                 program_tokens.append(Token(tc, 1))
             elif tc == "invert":
-                print(f"[{ti}] found invert operator")
+                if debug_show_parse: print(f"[{ti}] found invert operator")
                 program_tokens.append(Token(tc, 1))
 
             elif tc[0] == "\"":
+                if debug_show_parse: print(f"[{ti}] found string literal")
                 tc_str = tc.replace("\"", "")
                 if tc[-1] == "\"": # need a better way of parsing strings
-                    print(f"[{ti}] found string literal")
+                    if debug_show_parse: print(f"[{ti}] found end of string literal")
                     #tc_str = tc.replace("\"", "")
                     program_tokens.append(Token(tc_str, 2))
 
             elif tc == "constant":
-                print(f"[{ti}] found constant initialization keyword")
+                if debug_show_parse: print(f"[{ti}] found constant initialization keyword")
                 program_tokens.append(Token(tc, 3))
 
             elif (program_tokens[-1].ttype == 3) and not (tc.isnumeric()):
-                print(f"[{ti}] found constant name declaration")
+                if debug_show_parse: print(f"[{ti}] found constant name declaration")
                 variable_stack[tc] = (program_tokens[-2].val, program_tokens[-2].ttype)
             
             elif tc in variable_stack:
@@ -131,58 +143,59 @@ def main():
 
         # Stage: Interpreting program by keywords
         for ti, tc in enumerate(program_tokens):
+            if "--show-stack" in sys.argv: print(f"Stack: {main_stack}")
             if tc.ttype == 0:                   # integer
                 main_stack.append(tc.val)
 
             elif tc.ttype == 1 and tc.val == "+": # + operator
-                assert len(main_stack) >= 2, f"Error: stack contents not sufficient for operation. {ti, tc}"
+                assert len(main_stack) >= 2, f"Error: stack contents not sufficient for operation. {ti, tc.val}"
                 v1 = main_stack.pop()
                 v2 = main_stack.pop()
                 main_stack.append(v1 + v2)
 
             elif tc.ttype == 1 and tc.val == "-": # - operator
-                assert len(main_stack) >= 2, f"Error: stack contents not sufficient for operation. {ti, tc}"
+                assert len(main_stack) >= 2, f"Error: stack contents not sufficient for operation. {ti, tc.val}"
                 v1 = main_stack.pop()
                 v2 = main_stack.pop()
                 main_stack.append(v2 - v1)
 
             elif tc.ttype == 1 and tc.val == "*": # * operator
-                assert len(main_stack) >= 2, f"Error: stack contents not sufficient for operation. {ti, tc}"
+                assert len(main_stack) >= 2, f"Error: stack contents not sufficient for operation. {ti, tc.val}"
                 v1 = main_stack.pop()
                 v2 = main_stack.pop()
                 main_stack.append(v2 * v1)
 
             elif tc.ttype == 1 and tc.val == "/": # / operator
-                assert len(main_stack) >= 2, f"Error: stack contents not sufficient for operation. {ti, tc}"
+                assert len(main_stack) >= 2, f"Error: stack contents not sufficient for operation. {ti, tc.val}"
                 v1 = main_stack.pop()
                 v2 = main_stack.pop()
                 if v2 % v1 == 0: main_stack.append(int(v2 / v1))
                 else: main_stack.append(v2 / v1)
 
             elif tc.ttype == 1 and tc.val == ".": # . operator (print)
-                assert len(main_stack) >= 1, f"Error: stack contents not sufficient for operation. {ti, tc}"
+                assert len(main_stack) >= 1, f"Error: stack contents not sufficient for operation. {ti, tc.val}"
                 v1 = main_stack.pop()
                 print(v1, end=" ")
 
             elif tc.ttype == 1 and tc.val == "swap": # swap operator
-                assert len(main_stack) >= 2, f"Error: stack contents not sufficient for operation. {ti, tc}"
+                assert len(main_stack) >= 2, f"Error: stack contents not sufficient for operation. {ti, tc.val}"
                 v1 = main_stack.pop()
                 v2 = main_stack.pop()
                 main_stack.append(v1)
                 main_stack.append(v2)
 
             elif tc.ttype == 1 and tc.val == "dup": # dup operator
-                assert len(main_stack) >= 1, f"Error: stack contents not sufficient for operation. {ti, tc}"
+                assert len(main_stack) >= 1, f"Error: stack contents not sufficient for operation. {ti, tc.val}"
                 v1 = main_stack.pop()
                 main_stack.append(v1)
                 main_stack.append(v1)
             
             elif tc.ttype == 1 and tc.val == "drop": # drop operator
-                assert len(main_stack) >= 1, f"Error: stack contents not sufficient for operation. {ti, tc}"
+                assert len(main_stack) >= 1, f"Error: stack contents not sufficient for operation. {ti, tc.val}"
                 main_stack.pop()
 
             elif tc.ttype == 1 and tc.val == "over": # over operator
-                assert len(main_stack) >= 2, f"Error: stack contents not sufficient for operation. {ti, tc}"
+                assert len(main_stack) >= 2, f"Error: stack contents not sufficient for operation. {ti, tc.val}"
                 v1 = main_stack.pop()
                 v2 = main_stack.pop()
                 main_stack.append(v2)
@@ -190,7 +203,7 @@ def main():
                 main_stack.append(v2)
 
             elif tc.ttype == 1 and tc.val == "rot": # rot operator
-                assert len(main_stack) >= 3, f"Error: stack contents not sufficient for operation. {ti, tc}"
+                assert len(main_stack) >= 3, f"Error: stack contents not sufficient for operation. {ti, tc.val}"
                 v1 = main_stack.pop()
                 v2 = main_stack.pop()
                 v3 = main_stack.pop()
@@ -199,7 +212,7 @@ def main():
                 main_stack.append(v3)
 
             elif tc.ttype == 1 and tc.val == "emit": # emit operator
-                assert len(main_stack) >= 1, f"Error: stack contents not sufficient for operation. {ti, tc}"
+                assert len(main_stack) >= 1, f"Error: stack contents not sufficient for operation. {ti, tc.val}"
                 v1 = main_stack.pop()
                 print(chr(v1), end="")
 
@@ -208,7 +221,7 @@ def main():
                 print("\n", end="")
 
             elif tc.ttype == 1 and tc.val == "+!":
-                assert len(main_stack) >= 1, f"Error: stack contents not sufficient for operation. {ti, tc}"
+                assert len(main_stack) >= 1, f"Error: stack contents not sufficient for operation. {ti, tc.val}"
                 #v1 = main_stack.pop()
                 #v2 = main_stack.pop()
                 assert False, "+! not implemented"
@@ -247,7 +260,7 @@ def main():
                 v1 = main_stack.pop()
                 if v1 == -1: main_stack.append(0)
                 elif v1 == 0: main_stack.append(-1)
-                else: assert False, f"Error: Not a boolean operator. {ti, tc}"
+                else: assert False, f"Error: Not a boolean operator. {ti, tc.val}"
 
             elif tc.ttype == 2:                   # string literal
                 main_stack.append(tc.val)
