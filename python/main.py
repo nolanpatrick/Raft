@@ -2,7 +2,7 @@
 Python experimental implementation for proof-of-concept. Bits and pieces will be ported to C periodically throughout development.
 
 
-TODO: Definitions, string-print (."), conditionals, variables
+TODO: Definitions, string-print (."), conditionals, variables, arrays, keyboard input
             
 """
 

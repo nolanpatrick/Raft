@@ -1,6 +1,6 @@
 34 35 + . "hello_world" .
 100 25 swap / dup . .
-50 constant five
+50 constant fifty
 33 119 111 87 emit emit emit emit
 cr
 34 35 < . cr
@@ -15,5 +15,5 @@ cr
 0 invert . cr
 
 
-8 7 + .
-five 6 + .
+8 7 + . cr
+fifty 6 + .
