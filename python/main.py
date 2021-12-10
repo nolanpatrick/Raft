@@ -45,6 +45,10 @@ def main():
                 print(f"[{ti}] found numeric")
                 if '.' in tc: program_tokens.append(Token(float(tc), 0))
                 else: program_tokens.append(Token(int(tc), 0))
+            elif tc[0] == "-" and tc[1:].isnumeric():
+                print(f"[{ti}] found numeric")
+                if '.' in tc: program_tokens.append(Token(float(tc), 0))
+                else: program_tokens.append(Token(int(tc), 0))
             elif tc == "+":
                 print(f"[{ti}] found + operator")
                 program_tokens.append(Token(tc, 1))
@@ -90,6 +94,15 @@ def main():
             elif tc == ">":
                 print(f"[{ti}] found > operator")
                 program_tokens.append(Token(tc, 1))
+            elif tc == "and":
+                print(f"[{ti}] found and operator")
+                program_tokens.append(Token(tc, 1))
+            elif tc == "or":
+                print(f"[{ti}] found or operator")
+                program_tokens.append(Token(tc, 1))
+            elif tc == "invert":
+                print(f"[{ti}] found invert operator")
+                program_tokens.append(Token(tc, 1))
 
             elif tc[0] == "\"":
                 tc_str = tc.replace("\"", "")
@@ -107,54 +120,54 @@ def main():
                 main_stack.append(tc.val)
 
             elif tc.ttype == 1 and tc.val == "+": # + operator
-                assert len(main_stack) >= 2, f"Error: stack contents not sufficient for operation. {ti}"
+                assert len(main_stack) >= 2, f"Error: stack contents not sufficient for operation. {ti, tc}"
                 v1 = main_stack.pop()
                 v2 = main_stack.pop()
                 main_stack.append(v1 + v2)
 
             elif tc.ttype == 1 and tc.val == "-": # - operator
-                assert len(main_stack) >= 2, f"Error: stack contents not sufficient for operation. {ti}"
+                assert len(main_stack) >= 2, f"Error: stack contents not sufficient for operation. {ti, tc}"
                 v1 = main_stack.pop()
                 v2 = main_stack.pop()
                 main_stack.append(v2 - v1)
 
             elif tc.ttype == 1 and tc.val == "*": # * operator
-                assert len(main_stack) >= 2, f"Error: stack contents not sufficient for operation. {ti}"
+                assert len(main_stack) >= 2, f"Error: stack contents not sufficient for operation. {ti, tc}"
                 v1 = main_stack.pop()
                 v2 = main_stack.pop()
                 main_stack.append(v2 * v1)
 
             elif tc.ttype == 1 and tc.val == "/": # / operator
-                assert len(main_stack) >= 2, f"Error: stack contents not sufficient for operation. {ti}"
+                assert len(main_stack) >= 2, f"Error: stack contents not sufficient for operation. {ti, tc}"
                 v1 = main_stack.pop()
                 v2 = main_stack.pop()
                 if v2 % v1 == 0: main_stack.append(int(v2 / v1))
                 else: main_stack.append(v2 / v1)
 
             elif tc.ttype == 1 and tc.val == ".": # . operator (print)
-                assert len(main_stack) >= 1, f"Error: stack contents not sufficient for operation. {ti}"
+                assert len(main_stack) >= 1, f"Error: stack contents not sufficient for operation. {ti, tc}"
                 v1 = main_stack.pop()
                 print(v1, end=" ")
 
             elif tc.ttype == 1 and tc.val == "swap": # swap operator
-                assert len(main_stack) >= 2, f"Error: stack contents not sufficient for operation. {ti}"
+                assert len(main_stack) >= 2, f"Error: stack contents not sufficient for operation. {ti, tc}"
                 v1 = main_stack.pop()
                 v2 = main_stack.pop()
                 main_stack.append(v1)
                 main_stack.append(v2)
 
             elif tc.ttype == 1 and tc.val == "dup": # dup operator
-                assert len(main_stack) >= 1, f"Error: stack contents not sufficient for operation. {ti}"
+                assert len(main_stack) >= 1, f"Error: stack contents not sufficient for operation. {ti, tc}"
                 v1 = main_stack.pop()
                 main_stack.append(v1)
                 main_stack.append(v1)
             
             elif tc.ttype == 1 and tc.val == "drop": # drop operator
-                assert len(main_stack) >= 1, f"Error: stack contents not sufficient for operation. {ti}"
+                assert len(main_stack) >= 1, f"Error: stack contents not sufficient for operation. {ti, tc}"
                 main_stack.pop()
 
             elif tc.ttype == 1 and tc.val == "over": # over operator
-                assert len(main_stack) >= 2, f"Error: stack contents not sufficient for operation. {ti}"
+                assert len(main_stack) >= 2, f"Error: stack contents not sufficient for operation. {ti, tc}"
                 v1 = main_stack.pop()
                 v2 = main_stack.pop()
                 main_stack.append(v2)
@@ -162,7 +175,7 @@ def main():
                 main_stack.append(v2)
 
             elif tc.ttype == 1 and tc.val == "rot": # rot operator
-                assert len(main_stack) >= 3, f"Error: stack contents not sufficient for operation. {ti}"
+                assert len(main_stack) >= 3, f"Error: stack contents not sufficient for operation. {ti, tc}"
                 v1 = main_stack.pop()
                 v2 = main_stack.pop()
                 v3 = main_stack.pop()
@@ -171,7 +184,7 @@ def main():
                 main_stack.append(v3)
 
             elif tc.ttype == 1 and tc.val == "emit": # emit operator
-                assert len(main_stack) >= 1, f"Error: stack contents not sufficient for operation. {ti}"
+                assert len(main_stack) >= 1, f"Error: stack contents not sufficient for operation. {ti, tc}"
                 v1 = main_stack.pop()
                 print(chr(v1), end="")
 
@@ -196,6 +209,24 @@ def main():
                 v2 = main_stack.pop()
                 if v1 < v2: main_stack.append(-1)
                 else: main_stack.append(0)
+
+            elif tc.ttype == 1 and tc.val == "and":
+                v1 = main_stack.pop()
+                v2 = main_stack.pop()
+                if (v1 == -1 and v2 == -1): main_stack.append(-1)
+                else: main_stack.append(0)
+
+            elif tc.ttype == 1 and tc.val == "or":
+                v1 = main_stack.pop()
+                v2 = main_stack.pop()
+                if (v1 == -1 or v2 == -1): main_stack.append(-1)
+                else: main_stack.append(0)
+
+            elif tc.ttype == 1 and tc.val == "invert":
+                v1 = main_stack.pop()
+                if v1 == -1: main_stack.append(0)
+                elif v1 == 0: main_stack.append(-1)
+                else: assert False, f"Error: Not a boolean operator. {ti, tc}"
 
             elif tc.ttype == 2:                   # string literal
                 main_stack.append(tc.val)
