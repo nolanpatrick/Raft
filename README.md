@@ -1,7 +1,7 @@
 # North
 
-My own take on a custom, stack-based interpreted programming language. Syntactically inspired by Forth.
-Project idea shamelessly stolen from Alexey Kutepov (Tsoding)'s [Porth](https://gitlab.com/tsoding/porth).
+My own take on a Forth interpreter.
+Project inspired by Alexey Kutepov (Tsoding)'s [Porth](https://gitlab.com/tsoding/porth).
 
 ## Compiling
 
