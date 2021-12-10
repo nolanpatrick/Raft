@@ -2,7 +2,7 @@
 Python experimental implementation for proof-of-concept. Bits and pieces will be ported to C periodically throughout development.
 
 
-TODO: Definitions, string-print (.")
+TODO: Definitions, string-print (."), conditionals, variables
             
 """
 
@@ -14,7 +14,7 @@ class Token:
 def main():
     print("[INFO] *** PHORTH: Python test implementation for North ***")
 
-    filename = "C:\\data\\program.f"
+    filename = "./test/program.f"
 
     with open(filename, 'r') as file_in:
         file_buffer = file_in.read()
@@ -38,6 +38,7 @@ def main():
 
         program_tokens = []
         main_stack = [] # this will be the main stack for the program.
+        variable_stack = {} # this holds constants and variables
 
         # Stage: parsing file, taking note of what types are contained
         for ti, tc in enumerate(token_list):
@@ -85,6 +86,9 @@ def main():
             elif tc == "cr":
                 print(f"[{ti}] found cr operator")
                 program_tokens.append(Token(tc, 1))
+            elif tc == "+!":
+                print(f"[{ti}] found +! operator")
+                program_tokens.append(Token(tc, 1))
             elif tc == "=":
                 print(f"[{ti}] found = operator")
                 program_tokens.append(Token(tc, 1))
@@ -111,8 +115,19 @@ def main():
                     #tc_str = tc.replace("\"", "")
                     program_tokens.append(Token(tc_str, 2))
 
+            elif tc == "constant":
+                print(f"[{ti}] found constant initialization keyword")
+                program_tokens.append(Token(tc, 3))
+
+            elif (program_tokens[-1].ttype == 3) and not (tc.isnumeric()):
+                print(f"[{ti}] found constant name declaration")
+                variable_stack[tc] = (program_tokens[-2].val, program_tokens[-2].ttype)
+            
+            elif tc in variable_stack:
+                program_tokens.append(Token(variable_stack[tc][0], variable_stack[tc][1]))
+
             else:
-                assert False, f"[{ti}] found unknown keyword"
+                assert False, f"[{ti}] found unknown keyword: {tc}"
 
         # Stage: Interpreting program by keywords
         for ti, tc in enumerate(program_tokens):
@@ -192,6 +207,12 @@ def main():
                 #assert len(main_stack) >= 1, f"Error: stack contents not sufficient for operation. {ti}"
                 print("\n", end="")
 
+            elif tc.ttype == 1 and tc.val == "+!":
+                assert len(main_stack) >= 1, f"Error: stack contents not sufficient for operation. {ti, tc}"
+                #v1 = main_stack.pop()
+                #v2 = main_stack.pop()
+                assert False, "+! not implemented"
+
             elif tc.ttype == 1 and tc.val == "=":
                 v1 = main_stack.pop()
                 v2 = main_stack.pop()
@@ -231,7 +252,10 @@ def main():
             elif tc.ttype == 2:                   # string literal
                 main_stack.append(tc.val)
                 #print(f"[{ti}] Stack: {main_stack}")
-            else:
-                assert False, "Unreachable"
+
+            elif tc.ttype == 3:
+                j = 0
+
+            else: assert False, "Unreachable"
 
 if __name__=="__main__": main()
