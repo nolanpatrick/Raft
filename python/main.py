@@ -10,7 +10,7 @@ class Token:
 def main():
     print("[INFO] *** Python test implementation for North ***")
 
-    filename = "C:\\data\\program.forth"
+    filename = "C:\\data\\program.f"
 
     with open(filename, 'r') as file_in:
         file_buffer = file_in.read()
@@ -62,6 +62,21 @@ def main():
             elif tc == "dup":
                 print(f"[{ti}] found dup operator")
                 program_tokens.append(Token(tc, 1))
+            elif tc == "drop":
+                print(f"[{ti}] found drop operator")
+                program_tokens.append(Token(tc, 1))
+            elif tc == "over":
+                print(f"[{ti}] found over operator")
+                program_tokens.append(Token(tc, 1))
+            elif tc == "rot":
+                print(f"[{ti}] found orot operator")
+                program_tokens.append(Token(tc, 1))
+            elif tc == "emit":
+                print(f"[{ti}] found emit operator")
+                program_tokens.append(Token(tc, 1))
+            elif tc == "cr":
+                print(f"[{ti}] found cr operator")
+                program_tokens.append(Token(tc, 1))
 
             elif tc[0] == "\"":
                 tc_str = tc.replace("\"", "")
@@ -75,59 +90,86 @@ def main():
 
         # Stage: Interpreting program by keywords
         for ti, tc in enumerate(program_tokens):
-
             if tc.ttype == 0:                   # integer
                 main_stack.append(tc.val)
-                #print(f"[{ti}] Stack: {main_stack}")
 
-            if tc.ttype == 1 and tc.val == "+": # + operator
+            elif tc.ttype == 1 and tc.val == "+": # + operator
                 assert len(main_stack) >= 2, f"Error: stack contents not sufficient for operation. {ti}"
                 v1 = main_stack.pop()
                 v2 = main_stack.pop()
                 main_stack.append(v1 + v2)
-                #print(f"[{ti}] Stack: {main_stack}")
 
-            if tc.ttype == 1 and tc.val == "-": # - operator
+            elif tc.ttype == 1 and tc.val == "-": # - operator
                 assert len(main_stack) >= 2, f"Error: stack contents not sufficient for operation. {ti}"
                 v1 = main_stack.pop()
                 v2 = main_stack.pop()
                 main_stack.append(v2 - v1)
-                #print(f"[{ti}] Stack: {main_stack}")
 
-            if tc.ttype == 1 and tc.val == "*": # * operator
+            elif tc.ttype == 1 and tc.val == "*": # * operator
                 assert len(main_stack) >= 2, f"Error: stack contents not sufficient for operation. {ti}"
                 v1 = main_stack.pop()
                 v2 = main_stack.pop()
                 main_stack.append(v2 * v1)
 
-            if tc.ttype == 1 and tc.val == "/": # / operator
+            elif tc.ttype == 1 and tc.val == "/": # / operator
                 assert len(main_stack) >= 2, f"Error: stack contents not sufficient for operation. {ti}"
                 v1 = main_stack.pop()
                 v2 = main_stack.pop()
                 if v2 % v1 == 0: main_stack.append(int(v2 / v1))
                 else: main_stack.append(v2 / v1)
 
-            if tc.ttype == 1 and tc.val == ".": # . operator (print)
+            elif tc.ttype == 1 and tc.val == ".": # . operator (print)
                 assert len(main_stack) >= 1, f"Error: stack contents not sufficient for operation. {ti}"
                 v1 = main_stack.pop()
-                print(f"{v1}")
-                #print(f"[{ti}] Stack: {main_stack}")
+                print(v1, end=" ")
 
-            if tc.ttype == 1 and tc.val == "swap": # swap operator
+            elif tc.ttype == 1 and tc.val == "swap": # swap operator
                 assert len(main_stack) >= 2, f"Error: stack contents not sufficient for operation. {ti}"
                 v1 = main_stack.pop()
                 v2 = main_stack.pop()
                 main_stack.append(v1)
                 main_stack.append(v2)
 
-            if tc.ttype == 1 and tc.val == "dup": # dup operator
+            elif tc.ttype == 1 and tc.val == "dup": # dup operator
                 assert len(main_stack) >= 1, f"Error: stack contents not sufficient for operation. {ti}"
                 v1 = main_stack.pop()
                 main_stack.append(v1)
                 main_stack.append(v1)
+            
+            elif tc.ttype == 1 and tc.val == "drop": # drop operator
+                assert len(main_stack) >= 1, f"Error: stack contents not sufficient for operation. {ti}"
+                main_stack.pop()
 
-            if tc.ttype == 2:                   # string literal
+            elif tc.ttype == 1 and tc.val == "over": # over operator
+                assert len(main_stack) >= 2, f"Error: stack contents not sufficient for operation. {ti}"
+                v1 = main_stack.pop()
+                v2 = main_stack.pop()
+                main_stack.append(v2)
+                main_stack.append(v1)
+                main_stack.append(v2)
+
+            elif tc.ttype == 1 and tc.val == "rot": # rot operator
+                assert len(main_stack) >= 3, f"Error: stack contents not sufficient for operation. {ti}"
+                v1 = main_stack.pop()
+                v2 = main_stack.pop()
+                v3 = main_stack.pop()
+                main_stack.append(v1)
+                main_stack.append(v2)
+                main_stack.append(v3)
+
+            elif tc.ttype == 1 and tc.val == "emit": # emit operator
+                assert len(main_stack) >= 1, f"Error: stack contents not sufficient for operation. {ti}"
+                v1 = main_stack.pop()
+                print(chr(v1), end="")
+
+            elif tc.ttype == 1 and tc.val == "cr": # cr operator
+                assert len(main_stack) >= 1, f"Error: stack contents not sufficient for operation. {ti}"
+                print("\n", end="")
+
+            elif tc.ttype == 2:                   # string literal
                 main_stack.append(tc.val)
                 #print(f"[{ti}] Stack: {main_stack}")
+            else:
+                assert False, "Unreachable"
 
 if __name__=="__main__": main()
