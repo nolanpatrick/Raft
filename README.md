@@ -1,6 +1,6 @@
 # North
 
-My own take on a Forth interpreter.
+My own take on an interpreted Forth-like language.
 Project inspired by Alexey Kutepov (Tsoding)'s [Porth](https://gitlab.com/tsoding/porth).
 
 ## Compiling
