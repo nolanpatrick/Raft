@@ -11,7 +11,7 @@ typedef struct {
 } Token;
 
 int main(void) {
-    const char *filename = "C:\\data\\program.cst";
+    const char *filename = "C:\\data\\lipsum.txt";
 
     FILE *fp = fopen(filename, "r");
 
@@ -31,26 +31,20 @@ int main(void) {
         printf("%s\n", file_buffer);
         printf("token size %d\n", sizeof(Token));
 
-        //Token *program_tokens;
-        int *token_loc = malloc(sizeof(int));
-
-
+        Token *program_tokens;
         int current_alloc = 16;
-        token_loc = realloc(token_loc, current_alloc * sizeof(int));
+        int *token_loc = malloc(current_alloc * sizeof(int));
 
-        // for (int i = 0; i < 6000; i++){
-        //     token_loc[i] = i;
-        //     printf("[%d]: %d\n", i, token_loc[i]);
-        // }
-
-        int token_index = 1, j = 0;
+        int token_index = 1, j = 0; // j = raw file character index
         token_loc[0] = 0;
         while (j < len_file) {
             printf("%c\n", file_buffer[j]);
             if (file_buffer[j] == ' ') {
+
                 if (j >= current_alloc) {
                     current_alloc += 16;
                     token_loc = realloc(token_loc, current_alloc * sizeof(int)); // dynamically allocate 16 bytes at a time
+                    printf("[INFO] Allocated [%d bytes] of memory...", current_alloc);
                 }
 
                 token_loc[token_index] = j;
@@ -60,18 +54,7 @@ int main(void) {
             j++;
         }
 
-        //printf("tokens: %d", &token_loc);
-
         free(token_loc);
-
-        /* 
-        for (int i = 0; i < len_file; i++) {
-            if (file_buffer[i] == ' ') {
-                printf("token delim: %d\n", i);
-                AppendToIntArray(&token_loc, i);
-            }
-        }
-        AppendToIntArray(&token_loc, len_file + 1); */
+        return 0;
     }
-    return 0;
 }
