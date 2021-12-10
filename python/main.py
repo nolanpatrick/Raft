@@ -1,5 +1,9 @@
 """
 Python experimental implementation for proof-of-concept. Bits and pieces will be ported to C periodically throughout development.
+
+
+TODO: Definitions, string-print (.")
+            
 """
 
 class Token:
@@ -8,7 +12,7 @@ class Token:
         self.ttype = ttype
 
 def main():
-    print("[INFO] *** Python test implementation for North ***")
+    print("[INFO] *** PHORTH: Python test implementation for North ***")
 
     filename = "C:\\data\\program.f"
 
@@ -76,6 +80,15 @@ def main():
                 program_tokens.append(Token(tc, 1))
             elif tc == "cr":
                 print(f"[{ti}] found cr operator")
+                program_tokens.append(Token(tc, 1))
+            elif tc == "=":
+                print(f"[{ti}] found = operator")
+                program_tokens.append(Token(tc, 1))
+            elif tc == "<":
+                print(f"[{ti}] found < operator")
+                program_tokens.append(Token(tc, 1))
+            elif tc == ">":
+                print(f"[{ti}] found > operator")
                 program_tokens.append(Token(tc, 1))
 
             elif tc[0] == "\"":
@@ -163,8 +176,26 @@ def main():
                 print(chr(v1), end="")
 
             elif tc.ttype == 1 and tc.val == "cr": # cr operator
-                assert len(main_stack) >= 1, f"Error: stack contents not sufficient for operation. {ti}"
+                #assert len(main_stack) >= 1, f"Error: stack contents not sufficient for operation. {ti}"
                 print("\n", end="")
+
+            elif tc.ttype == 1 and tc.val == "=":
+                v1 = main_stack.pop()
+                v2 = main_stack.pop()
+                if v1 == v2: main_stack.append(-1)
+                else: main_stack.append(0)
+
+            elif tc.ttype == 1 and tc.val == "<":
+                v1 = main_stack.pop()
+                v2 = main_stack.pop()
+                if v2 < v1: main_stack.append(-1)
+                else: main_stack.append(0)
+
+            elif tc.ttype == 1 and tc.val == ">":
+                v1 = main_stack.pop()
+                v2 = main_stack.pop()
+                if v1 < v2: main_stack.append(-1)
+                else: main_stack.append(0)
 
             elif tc.ttype == 2:                   # string literal
                 main_stack.append(tc.val)
