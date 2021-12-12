@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "stack.c"
+#include "experiments.c"
 
 #define FILE_BUF_MAX 640000 // 640 KB
 #define TOKEN_LEN_MAX 100    // 100 characters max per token (will probably need to change in the future)
@@ -48,7 +49,7 @@ typedef struct {
 //     }
 //     return 1;
 // }
-
+/*
 int main(void) {
     const char *filename = "test/program2.n";
 
@@ -124,4 +125,4 @@ int main(void) {
 
         return 0;
     }
-}
+}*/
