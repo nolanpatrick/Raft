@@ -270,5 +270,7 @@ def main():
                 j = 0
 
             else: assert False, "Unreachable"
+        print(main_stack)
+        #assert len(main_stack) == 0, "Error: Unconsumed data on stack"
 
 if __name__=="__main__": main()
