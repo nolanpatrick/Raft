@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "stack.c"
-#include "experiments.c"
+#include "typechecking.c"
+//#include "experiments.c"
 
 #define FILE_BUF_MAX 640000 // 640 KB
 #define TOKEN_LEN_MAX 100    // 100 characters max per token (will probably need to change in the future)
@@ -28,28 +30,12 @@ typedef struct {
     int ttype; // 0=int, 1=op, 2=str, 3=const
 } Token;
 
-// int strIsIntNumeric(char *input) {
-//     for (int i = 0; i < sizeof(input); i++) { 
-//         if (input[i] < 16 || input[i] > 25) return 0;
-//     }
-//     return 1;
-// }
-
 // int strIsNegIntNumeric(char *input) {
 //     int isNegative = 0;
 //     if (input[0] == 13) isNegative = 1;
 // }
 
-// int strIsFloatNumeric(char *input) {
-//     if (input[0] == 13) {
 
-//     }
-//     for (int i = 0; i < sizeof(input); i++) {
-//         if (input[i] < 16 || input[i] > 25) return 0;
-//     }
-//     return 1;
-// }
-/*
 int main(void) {
     const char *filename = "test/program2.n";
 
@@ -88,6 +74,7 @@ int main(void) {
 
                         program[num_tokens] = current_token;
                         printf("Found token: \'%s\' of length: %d on line: %d\n", program[num_tokens].val, program[num_tokens].len, line_count);
+                        num_tokens++;
                     }
                 }
             }
@@ -101,16 +88,44 @@ int main(void) {
             }
         }
 
+        //strIsNumeric(program[0].val);
+        printf("========================================%d\n", num_tokens);
         for (int i = 0; i < num_tokens; i++) {
-            if (program[i].val >= 16 && program[i].val <= 25){
-
+            printf("Token: %s\n", program[i].val);
+            if (strIsNumeric(program[i].val)){
+                printf("** Numeric Token: %s\n", program[i].val);
             }
+            else if (strIsFloatNumeric(program[i].val)){
+                printf("** Float Numeric Token: %s\n", program[i].val);
+            }
+            else if (strIsStringLiteral(program[i].val)){
+                printf("** String Literal Token: %s\n", program[i].val);
+            }
+            else if (strIsArithmeticOperator(program[i].val)){
+                printf("** Arithmetic Token: %s\n", program[i].val);
+            }
+            else if (strIsBooleanShort(program[i].val)){
+                printf("** Boolean Short Token: %s\n", program[i].val);
+            }
+            else if (strIsBooleanLong(program[i].val)){
+                printf("** Boolean Long Token: %s\n", program[i].val);
+            }
+            else if (strIsGenericOperator(program[i].val)){
+                printf("** Generic Operator Token: %s\n", program[i].val);
+            }
+            else if (strIsConstVarDeclaration(program[i].val)){
+                printf("** Const or Var Declaration Token: %s\n", program[i].val);
+            }
+            else {
+                printf("** Unknown Token: %s\n", program[i].val);
+            }
+            
         }
 
         for (int i = 0; i < num_tokens; i++) {
             if (program[i].ttype == 0) { // type: int
-                cv = (float) program[i].val
-                pushIntToStack()
+                //float cv = (float) program[i].val;
+                //pushIntToStack()
             }
             if (program[i].ttype == 1) { // type: operator
 
@@ -125,4 +140,4 @@ int main(void) {
 
         return 0;
     }
-}*/
+}

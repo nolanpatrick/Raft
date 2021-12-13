@@ -1,6 +1,6 @@
 34 35 + . 
-"hello_world" constant test
-"new_string" constant test
+"hello_world" const test
+"new_string" const test
 100 25 swap / dup . .
 50 constant fifty
 33 119 111 87 emit emit emit emit
@@ -20,3 +20,4 @@ cr
 8 7 + . cr
 fifty 6 + .
 test .
+123.45
