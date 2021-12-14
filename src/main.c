@@ -86,12 +86,11 @@ int main(void) {
         int token_count = 0;
         int program_var_count = 0;
 
-        Token *Program = (Token *) malloc(sizeof(Token));                               // Store program tokens
+        Token *Program = (Token *) malloc(sizeof(Token));                               // Program tokens
         ProgramConVar *ProgramVars   = (ProgramConVar *) malloc(sizeof(ProgramConVar)); // Program variables
 
         // BEGIN TOKENIZATION
 
-        
         int line_count = 0;
         int line_token_count = 0;
 
@@ -164,7 +163,7 @@ int main(void) {
 
                     if (!strcmp(Program[token_count-1].T_str, "const")) NewCV.status = CV_immutable;
                     else if (!strcmp(Program[token_count-1].T_str, "var")) NewCV.status = CV_mutable;
-                    else printf("!!! Unreachable !!!");
+                    else printf("Unreachable");
 
                     NewCV.name = calloc(strlen(token_str), sizeof(char));
                     memcpy(NewCV.name, token_str, strlen(token_str));
@@ -183,12 +182,11 @@ int main(void) {
                             NewCV.CV_Type = CV_datatype_str;
                             break;
                         default:
-                            throwError(filename, line_count, line_token_count, "ya know...", token_str);
+                            throwError(filename, line_count, line_token_count, "Invalid variable or const type", token_str);
                             break;
                     }
                     ProgramVars[program_var_count++] = NewCV;
                     ProgramVars = realloc(ProgramVars, sizeof(ProgramConVar) * (program_var_count+2));
-                    //}
                 }
 
                 else {
