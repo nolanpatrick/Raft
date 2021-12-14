@@ -1,8 +1,7 @@
-34 35 + . 
-"hello_world" const test
-"new_string" const test
+"hello_world" hw const
+"new_string" test const
 100 25 swap / dup . .
-50 var fifty
+50 fifty var
 33 119 111 87 emit emit emit emit
 cr
 34 35 < . cr
@@ -15,8 +14,8 @@ cr
 -1 0 or . cr
 -1 invert . cr
 0 invert . cr
-twelve
-
+12 twelve var
+13 twelve var!
 8 7 + . cr
 fifty 6 + .
 test .

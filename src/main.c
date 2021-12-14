@@ -61,6 +61,8 @@ typedef struct { // Variable and constant structure
     };
 } ProgramConVar;
 
+
+
 void throwError(const char *filename, int line, int token, char *message, char *operator) {
     printf("%s:%d:%d Error: %s: '%s'\n", filename, line, token, message, operator);
     exit(1);
@@ -148,7 +150,7 @@ int interpret_program(char *filename, int flag_verbose){
                     memcpy(NewToken.T_op, token_str, strlen(token_str));
                     if (flag_verbose) printf(" - %d, %d:%d Token GEN [%s]\n", token_count, NewToken.line, NewToken.loc, NewToken.T_op);
                 }
-                else if (strIsConstVarDeclaration(token_str)){
+                else if (strIsConstDeclaration(token_str)){
                     NewToken.T_Type = TT_declaration;
                     NewToken.T_op = calloc(strlen(token_str), sizeof(char));
                     memcpy(NewToken.T_op, token_str, strlen(token_str));
@@ -158,13 +160,13 @@ int interpret_program(char *filename, int flag_verbose){
                     NewToken.T_Type = TT_decl_str;
                     NewToken.T_str = calloc(strlen(token_str), sizeof(char));
                     memcpy(NewToken.T_str, token_str, strlen(token_str));
-                    if (flag_verbose) printf(" - %d, %d:%d Token DCN [%s]\n", token_count, NewToken.line, NewToken.loc, NewToken.T_str);
+                    if (flag_verbose) printf(" - %d, %d:%d Token CND [%s]\n", token_count, NewToken.line, NewToken.loc, NewToken.T_str);
 
                     ProgramConVar NewCV;
 
                     if (!strcmp(Program[token_count-1].T_str, "const")) NewCV.status = CV_immutable;
-                    else if (!strcmp(Program[token_count-1].T_str, "var")) NewCV.status = CV_mutable;
-                    else printf("Unreachable");
+                    // else if (!strcmp(Program[token_count-1].T_str, "var")) NewCV.status = CV_mutable;
+                    // else printf("Unreachable");
 
                     NewCV.name = calloc(strlen(token_str), sizeof(char));
                     memcpy(NewCV.name, token_str, strlen(token_str));

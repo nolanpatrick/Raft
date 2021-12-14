@@ -73,7 +73,7 @@ int strIsGenericOperator(char *input) {
     return 0;
 }
 
-int strIsConstVarDeclaration(char *input) {
-    if (!strcmp(input, "const") || !strcmp(input, "var")) return 1;
+int strIsConstDeclaration(char *input) {
+    if (!strcmp(input, "const")) return 1;
     return 0;
 }
