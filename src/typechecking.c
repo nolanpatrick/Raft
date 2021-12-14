@@ -69,7 +69,7 @@ int strIsBooleanLong(char *input) {
 }
 
 int strIsGenericOperator(char *input) {
-    if (!strcmp(input, "cr") || !strcmp(input, ".") || !strcmp(input, "emit") || !strcmp(input, "swap")) return 1;
+    if (!strcmp(input, "cr") || !strcmp(input, ".") || !strcmp(input, "emit") || !strcmp(input, "swap") || !strcmp(input, "dup")) return 1;
     return 0;
 }
 

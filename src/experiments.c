@@ -2,7 +2,7 @@
 
 int main() {
     char *test = (char *) calloc(4, sizeof(char));
-    strcpy(test, "-420.69");
+    strcpy(test, "-123.45");
     printf("string: %s\n", test);
 
     float holder = strtof(test, NULL);

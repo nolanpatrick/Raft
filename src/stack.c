@@ -1,10 +1,15 @@
 #define STACK_HEIGHT_MAX 1000
 #define STRING_LEN_MAX 100
 
+enum StackItem_Type {SI_int, SI_float, SI_str};
+
 typedef struct {
-    int value;
-    char *svalue;
-    int isStr;
+    enum StackItem_Type SI_type;
+    union {
+        int   SI_i;
+        float SI_f;
+        char *SI_s;
+    };
 } StackItem;
 
 typedef struct {
@@ -14,7 +19,35 @@ typedef struct {
 
 Stack MainStack;
 
-int pushIntToStack(int input) {
+
+int pushIntToStack(int n) {
+    if (MainStack.height != STACK_HEIGHT_MAX) {
+        
+    } else {
+
+    }
+}
+
+int pushFloatToStack() {
+    if (MainStack.height != STACK_HEIGHT_MAX) {
+
+    } else {
+
+    }
+}
+
+/* int pushIntToStack(int input) {
+    if (MainStack.height != STACK_HEIGHT_MAX) {
+        StackItem new_item;
+        new_item.value = input;
+        new_item.isStr = 0;
+        MainStack.data[MainStack.height++] = new_item;
+        return 1;
+    }
+    return 0;
+} */
+/* 
+int pushToStack(float input) {
     if (MainStack.height != STACK_HEIGHT_MAX) {
         StackItem new_item;
         new_item.value = input;
@@ -41,7 +74,7 @@ int pushStrToStack(char *input) {
 int popFromStack() {
     if (MainStack.height > 0) {
         MainStack.height--;
-        return 1;
+        return MainStack[MainStack.height+1];
     }
     return 0;
-}
+} */
