@@ -8,6 +8,8 @@
 
 #define FILE_BUF_MAX 640000 // 640 KB
 
+char *version_string = "0.0.1";
+
 typedef enum { // Types of tokens allowed in program
     TT_datatype_int, 
     TT_datatype_float, 
@@ -64,8 +66,8 @@ void throwError(const char *filename, int line, int token, char *message, char *
     exit(1);
 }
 
-int main(void) {
-    const char *filename = ".\\test\\program2.n";
+int interpret_program(char *filename, int flag_verbose){
+    //const char *filename = ".\\test\\program2.n";
 
     FILE *fp = fopen(filename, "r");
 
@@ -110,54 +112,54 @@ int main(void) {
                 if (strIsNumeric(token_str)) {
                     NewToken.T_Type = TT_datatype_int;
                     NewToken.T_int = strtol(token_str, NULL, 10);
-                    printf(" - %d, %d:%d Token INT [%d]\n", token_count, NewToken.line, NewToken.loc, NewToken.T_int);
+                    if (flag_verbose) printf(" - %d, %d:%d Token INT [%d]\n", token_count, NewToken.line, NewToken.loc, NewToken.T_int);
                 } 
                 else if (strIsFloatNumeric(token_str)) {
                     NewToken.T_Type = TT_datatype_float;
                     NewToken.T_float = strtof(token_str, NULL);
-                    printf(" - %d, %d:%d Token FLT [%.2f]\n", token_count, NewToken.line, NewToken.loc, NewToken.T_float);
+                    if (flag_verbose) printf(" - %d, %d:%d Token FLT [%.2f]\n", token_count, NewToken.line, NewToken.loc, NewToken.T_float);
                 }
                 else if (strIsStringLiteral(token_str)){
                     NewToken.T_Type = TT_datatype_str;
                     NewToken.T_str = calloc(strlen(token_str), sizeof(char));
                     memcpy(NewToken.T_str, token_str, strlen(token_str));
-                    printf(" - %d, %d:%d Token STR [%s]\n", token_count, NewToken.line, NewToken.loc, NewToken.T_str);
+                    if (flag_verbose) printf(" - %d, %d:%d Token STR [%s]\n", token_count, NewToken.line, NewToken.loc, NewToken.T_str);
                 }
                 else if (strIsArithmeticOperator(token_str)){
                     NewToken.T_Type = TT_op_binary;
                     NewToken.T_op = calloc(strlen(token_str), sizeof(char));
                     memcpy(NewToken.T_op, token_str, strlen(token_str));
-                    printf(" - %d, %d:%d Token ART [%s]\n", token_count, NewToken.line, NewToken.loc, NewToken.T_op);
+                    if (flag_verbose) printf(" - %d, %d:%d Token ART [%s]\n", token_count, NewToken.line, NewToken.loc, NewToken.T_op);
                 }
                 else if (strIsBooleanShort(token_str)){
                     NewToken.T_Type = TT_op_binary;
                     NewToken.T_op = calloc(strlen(token_str), sizeof(char));
                     memcpy(NewToken.T_op, token_str, strlen(token_str));
-                    printf(" - %d, %d:%d Token BLS [%s]\n", token_count, NewToken.line, NewToken.loc, NewToken.T_op);
+                    if (flag_verbose) printf(" - %d, %d:%d Token BLS [%s]\n", token_count, NewToken.line, NewToken.loc, NewToken.T_op);
                 }
                 else if (strIsBooleanLong(token_str)){
                     NewToken.T_Type = TT_op_binary;
                     NewToken.T_op = calloc(strlen(token_str), sizeof(char));
                     memcpy(NewToken.T_op, token_str, strlen(token_str));
-                    printf(" - %d, %d:%d Token BLL [%s]\n", token_count, NewToken.line, NewToken.loc, NewToken.T_op);
+                    if (flag_verbose) printf(" - %d, %d:%d Token BLL [%s]\n", token_count, NewToken.line, NewToken.loc, NewToken.T_op);
                 }
                 else if (strIsGenericOperator(token_str)){
                     NewToken.T_Type = TT_op_unary;
                     NewToken.T_op = calloc(strlen(token_str), sizeof(char));
                     memcpy(NewToken.T_op, token_str, strlen(token_str));
-                    printf(" - %d, %d:%d Token GEN [%s]\n", token_count, NewToken.line, NewToken.loc, NewToken.T_op);
+                    if (flag_verbose) printf(" - %d, %d:%d Token GEN [%s]\n", token_count, NewToken.line, NewToken.loc, NewToken.T_op);
                 }
                 else if (strIsConstVarDeclaration(token_str)){
                     NewToken.T_Type = TT_declaration;
                     NewToken.T_op = calloc(strlen(token_str), sizeof(char));
                     memcpy(NewToken.T_op, token_str, strlen(token_str));
-                    printf(" - %d, %d:%d Token DEC [%s]\n", token_count, NewToken.line, NewToken.loc, NewToken.T_op);
+                    if (flag_verbose) printf(" - %d, %d:%d Token DEC [%s]\n", token_count, NewToken.line, NewToken.loc, NewToken.T_op);
                 }
                 else if (Program[token_count-1].T_Type == TT_declaration) {
                     NewToken.T_Type = TT_decl_str;
                     NewToken.T_str = calloc(strlen(token_str), sizeof(char));
                     memcpy(NewToken.T_str, token_str, strlen(token_str));
-                    printf(" - %d, %d:%d Token DCN [%s]\n", token_count, NewToken.line, NewToken.loc, NewToken.T_str);
+                    if (flag_verbose) printf(" - %d, %d:%d Token DCN [%s]\n", token_count, NewToken.line, NewToken.loc, NewToken.T_str);
 
                     ProgramConVar NewCV;
 
@@ -182,7 +184,7 @@ int main(void) {
                             NewCV.CV_Type = CV_datatype_str;
                             break;
                         default:
-                            throwError(filename, line_count, line_token_count, "Invalid variable or const type", token_str);
+                            throwError(filename, line_count+1, line_token_count, "Invalid variable or const type", token_str);
                             break;
                     }
                     ProgramVars[program_var_count++] = NewCV;
@@ -197,21 +199,21 @@ int main(void) {
                             varFound = 1;
                             switch (ProgramVars[i].CV_Type) {
                                 case (CV_datatype_int):
-                                    printf(" - %d, %d:%d Token VAR [%s, %d]\n", token_count, NewToken.line, NewToken.loc, ProgramVars[i].name, ProgramVars[i].CV_int);
+                                    if (flag_verbose) printf(" - %d, %d:%d Token VAR [%s, %d]\n", token_count, NewToken.line, NewToken.loc, ProgramVars[i].name, ProgramVars[i].CV_int);
                                     break;
                                 case (CV_datatype_float):
-                                    printf(" - %d, %d:%d Token VAR [%s, %.2f]\n", token_count, NewToken.line, NewToken.loc, ProgramVars[i].name, ProgramVars[i].CV_float);
+                                    if (flag_verbose) printf(" - %d, %d:%d Token VAR [%s, %.2f]\n", token_count, NewToken.line, NewToken.loc, ProgramVars[i].name, ProgramVars[i].CV_float);
                                     break;
                                 case (CV_datatype_str):
-                                    printf(" - %d, %d:%d Token VAR [%s, %s]\n", token_count, NewToken.line, NewToken.loc, ProgramVars[i].name, ProgramVars[i].CV_str);
+                                    if (flag_verbose) printf(" - %d, %d:%d Token VAR [%s, %s]\n", token_count, NewToken.line, NewToken.loc, ProgramVars[i].name, ProgramVars[i].CV_str);
                                     break;
                             }
                             break;
                         }
                     } 
                     if (!varFound) {
-                        printf(" - %d, %d:%d Token NUL [X]\n", token_count, NewToken.line, NewToken.loc);
-                        throwError(filename, line_count, line_token_count, "Unknown keyword or undeclared variable", token_str);
+                        if (flag_verbose) printf(" - %d, %d:%d Token NUL [%s] ***\n", token_count, NewToken.line, NewToken.loc, token_str);
+                        throwError(filename, line_count+1, line_token_count, "Unknown keyword or undeclared variable", token_str);
                     }
                 }
 
@@ -226,6 +228,49 @@ int main(void) {
             line_token_count = 0;
             line_count++;
         }  
-        return 0;
     }
+}
+
+void helpMessage(){
+    printf("North interpreter %s\n", version_string);
+    printf("usage: north [OPTIONS] -i <path_to_program>\n\n");
+    printf("required arguments:\n");
+    printf("  -i <file>       open file in interpretation mode\n");
+    printf("\noptional arguments:\n");
+    printf("  -v, --verbose   run program in verbose mode\n");
+    printf("  -h, --help      display this help message and exit\n");
+}
+
+int main(int argc, char *argv[]) {
+
+    int flag_verbose = 0;
+    int flag_interpret = 0;
+    char *input_path;
+
+    if (argc == 1) helpMessage();
+
+    for (int i = 0; i < argc; i++) {
+        if (!strcmp(argv[i], "-i") && argv[i+1] == NULL) {
+            helpMessage();
+            printf("\nError: please provide a path to the input file.\n");
+            exit(1);
+        }
+        if (!strcmp(argv[i], "-i") && argv[i+1] != NULL) {
+            input_path = calloc(strlen(argv[i+1]), sizeof(char));
+            strcpy(input_path, argv[i+1]);
+            flag_interpret = 1;
+        }
+        if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")){
+            helpMessage();
+            exit(0);
+        }
+        if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--verbose")) {
+            printf("[WARN] Enabled verbose mode\n\n");
+            flag_verbose = 1;
+        }
+    }
+    if (flag_interpret) {
+        interpret_program(input_path, flag_verbose);
+    }
+    return 0;
 }

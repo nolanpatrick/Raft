@@ -8,4 +8,4 @@ IF "%2"=="/c" cls
 ECHO ============ Starting Compilation ============
 %GCCPATH%\gcc.exe %SRC%\main.c -o %OUT%\out.exe
 
-IF "%1"=="/r" %OUT%\out.exe
+IF "%1"=="/r" %OUT%\out.exe -i .\test\program2.n -v
