@@ -67,7 +67,6 @@ void throwError(const char *filename, int line, int token, char *message, char *
 }
 
 int interpret_program(char *filename, int flag_verbose){
-    //const char *filename = ".\\test\\program2.n";
 
     FILE *fp = fopen(filename, "r");
 
@@ -190,7 +189,6 @@ int interpret_program(char *filename, int flag_verbose){
                     ProgramVars[program_var_count++] = NewCV;
                     ProgramVars = realloc(ProgramVars, sizeof(ProgramConVar) * (program_var_count+2));
                 }
-
                 else {
                     NewToken.T_Type = TT_null;
                     int varFound = 0;
@@ -231,7 +229,7 @@ int interpret_program(char *filename, int flag_verbose){
     }
 }
 
-void helpMessage(){
+void helpMessage() {
     printf("North interpreter %s\n", version_string);
     printf("usage: north [OPTIONS] -i <path_to_program>\n\n");
     printf("required arguments:\n");
