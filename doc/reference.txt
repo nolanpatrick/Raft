@@ -1,0 +1,23 @@
+*** Reference Sheet ***
+
+Valid Instructions:
+
+" : Denote beginning and end of string literal
+
++ : Add top two integers on stack
+- : Subtract top two integers on stack
+* : Multiply top two integers on stack
+/ : Divide top two integers on stack
+
+<int> : Push int onto stack (i.e. 37)
+<str> : Push reversed ASCII representation of string, followed by length of string, to top of stack. 
+		(Must be surrounded by (") tokens)
+
+sprint : Print string based on ASCII representation and length integer. Pops values as they are printed.
+iprint : Print integer on top of stack. Pops integer after printing.
+
+swap : Swap top two items on stack
+dup: Duplicate top item on stack
+over: Copy second item to top of stack
+rot: Move third item to top of stack
+drop: Pop top item from stack
