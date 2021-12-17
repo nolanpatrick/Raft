@@ -31,7 +31,7 @@ int strIsNumeric(char *input) {
     return 1;
 }
 
-int strIsFloatNumeric(char *input) {
+/* int strIsFloatNumeric(char *input) {
     float a = fmod(strtof(input, NULL), 1.0);
     //printf("Modulo op: %f", a);
     if (a != 0.0 && input != "."){
@@ -39,7 +39,7 @@ int strIsFloatNumeric(char *input) {
     }
     return 0;
 }
-
+ */
 int strIsStringLiteral(char *input) {
     if (input[0] == '\"' && input[strlen(input)-1] == '\"') return 1;
     return 0;
