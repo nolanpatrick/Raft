@@ -1,4 +1,4 @@
-*** Reference Sheet ***
+*** Language Reference Sheet ***
 
 All instructions must be separated by a space (space-delimited)
 
@@ -12,8 +12,7 @@ Valid Instructions:
 / : Divide top two integers on stack
 
 <int> : Push int onto stack (i.e. 37)
-<str> : Push reversed ASCII representation of string, followed by length of string, to top of stack. 
-		(Must be surrounded by (") tokens)
+<str> : Push reversed ASCII representation of string, followed by length of string, to top of stack. (must be surrounded by (") tokens)
 
 sprint : Print string based on ASCII representation and length integer. Pops values as they are printed.
 iprint : Print integer on top of stack. Pops integer after printing.
@@ -24,4 +23,4 @@ over: Copy second item to top of stack
 rot: Move third item to top of stack
 drop: Pop top item from stack
 
-( <text> ) : Denote comment. Nothing between parenthesis will be executed.
+{ <text> } : Denote comment. Nothing between curly-braces will be executed.
