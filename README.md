@@ -29,7 +29,7 @@ Boolean values are represented as integers either ```0: false``` or ```1: true``
 |------------|--------------|------------------------|---------------------|
 | ```and```  | And          | ```a: bool, b: bool``` | ```a and b: bool``` |
 | ```or```   | Or           | ```a: bool, b: bool``` | ```a or b: bool```  |
-| ```not```  | Invert       | ```a: bool```          | ```not a: bool```   |
+| ```not```  | Not/Invert   | ```a: bool```          | ```not a: bool```   |
 | ```<```    | Less than    | ```a: int, b: int```   | ```a < b: bool```   |
 | ```>```    | Greater than | ```a: int, b: int```   | ```a > b: bool```   |
 | ```==```   | Equal to     | ```a: int, b: int```   | ```a == b: bool```  |

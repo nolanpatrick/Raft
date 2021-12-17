@@ -1,5 +1,7 @@
 *** Reference Sheet ***
 
+All instructions must be separated by a space (space-delimited)
+
 Valid Instructions:
 
 " : Denote beginning and end of string literal
@@ -21,3 +23,5 @@ dup: Duplicate top item on stack
 over: Copy second item to top of stack
 rot: Move third item to top of stack
 drop: Pop top item from stack
+
+( <text> ) : Denote comment. Nothing between parenthesis will be executed.
