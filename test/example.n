@@ -2,7 +2,8 @@
 34 33 38 + + iprint
 cr
 { 600 / 11 = 54 + r6 }
-600 11 / drop iprint { int 600 / 11 } nbsp
+600 11 / drop iprint { int 600 / 11 }
+nbsp
 600 11 / swap drop iprint { 600 % 11 }
 cr
 " hello world! what's going on? " sprint
