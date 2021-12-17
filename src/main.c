@@ -268,25 +268,6 @@ void classifyTokens(Token *Program, int token_count, int flag_verbose){
     }
     interpretProgram(Program, token_count, flag_verbose);
 }
-/*
-typedef enum {
-    op_null,
-    op_add,
-    op_subtract,
-    op_multiply,
-    op_divide,
-    op_swap,
-    op_dup,
-    op_over,
-    op_rot,
-    op_drop,
-    op_ipush,
-    op_spush,
-    op_iprint,
-    op_sprint,
-    op_cr
-} Operations;
-*/
 
 void interpretProgram(Token *Program, int token_count, int flag_verbose) {
     if (flag_verbose) printf("\n===== Starting Interpretation Stage =====\n");
@@ -296,12 +277,10 @@ void interpretProgram(Token *Program, int token_count, int flag_verbose) {
 
     for (int i = 0; i < token_count; i++) {
         
-        //printf("  Op: %s\n", Program[i].T_str);
         switch (Program[i].OpType) {
             int a, b, c, d;
             int l, s;
             case op_null:
-                //printf("Null token: %s\n", Program[i].T_str);
                 break;
             case op_add:
                 if (stack_height < 2) {
@@ -403,7 +382,6 @@ void interpretProgram(Token *Program, int token_count, int flag_verbose) {
             case op_spush:
                 l = strlen(Program[i].T_str) - 1;
                 for (int j = l; j >= 0; j--) {
-                    //printf("%c", Program[i].T_str[j]);
                     Stack[stack_height++] = Program[i].T_str[j];
                 }
                 Stack[stack_height++] = strlen(Program[i].T_str);
@@ -436,7 +414,6 @@ void interpretProgram(Token *Program, int token_count, int flag_verbose) {
                 break;
 
         }
-        //printf("Stack height: %d\n", stack_height);
     }
     if (stack_height > 0) {
         printf("[WARN] Unhandled data on stack: ");
