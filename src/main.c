@@ -56,6 +56,12 @@ typedef struct { // Variable and constant structure
     };
 } ProgramConVar; 
 
+// ===== Program data goes here =====
+
+
+
+// ==================================
+
 void throwError(const char *filename, int line, int token, char *message, char *operator) {
     printf("%s:%d:%d Error: %s: '%s'\n", filename, line, token, message, operator);
     exit(1);
@@ -63,13 +69,13 @@ void throwError(const char *filename, int line, int token, char *message, char *
 
 int tokenize(char *file_buffer,int flag_verbose){
 
+    Token *Program = (Token *) malloc(sizeof(Token));                               // Program tokens
+    ProgramConVar *ProgramVars = (ProgramConVar *) malloc(sizeof(ProgramConVar));   // Program variables
+
     int len_file = strlen(file_buffer);
     
     int token_count = 0;
     int program_var_count = 0;
-
-    Token *Program = (Token *) malloc(sizeof(Token));                               // Program tokens
-    ProgramConVar *ProgramVars   = (ProgramConVar *) malloc(sizeof(ProgramConVar)); // Program variables
 
     int line_count = 0;
     int line_token_count = 0;
@@ -102,6 +108,8 @@ int tokenize(char *file_buffer,int flag_verbose){
         line_token_count = 0;
         line_count++;
     }
+    if (sizeof(Program) == 0) return 0;
+    return 1;
 }
 
 void helpMessage() {
