@@ -1,0 +1,8 @@
+{ comment test program }
+
+{ l }
+{ ab }
+{ a b c }
+{ 11 }
+{ 600 % 11 }
+{ 33 }

@@ -35,7 +35,8 @@ typedef enum {
     op_spush,
     op_iprint,
     op_sprint,
-    op_cr
+    op_cr,
+    op_nbsp
 } Operations;
 
 typedef struct { // Program token
@@ -86,10 +87,11 @@ int main(int argc, char *argv[]) {
             helpMessage();
             exit(0);
         }
-        if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--verbose")) {
-            printf("[WARN] Enabled verbose mode\n\n");
+        if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "--debug")) {
+            printf("[WARN] Enabled debugging mode\n\n");
             flag_verbose = 1;
         }
+
     }
     if (flag_run) {
 
@@ -118,7 +120,7 @@ void parseTokens(char *file_buffer, int flag_verbose){
     if (flag_verbose) printf("===== Starting Tokenization Stage =====\n");
 
     Token* Program = malloc(sizeof(Token));                       // Program tokens
-    
+
     int len_file = strlen(file_buffer);
     
     int token_count = 0;
@@ -143,25 +145,27 @@ void parseTokens(char *file_buffer, int flag_verbose){
                 char *token_str_comment = strtok_r(NULL, "}", &token_save_ptr);
 
                 int j = strlen(token_str_comment);
-                while (strcmp(&token_str_comment[--j], " ")); // For removing trailing whitespace
+                while (strcmp(&token_str_comment[--j], " ")); // token_str_comment[j] = '\0'; // For removing trailing whitespace
+                token_str_comment[j] = '\0';
 
                 NewToken.T_Type = TT_comment_content;
                 NewToken.OpType = op_null;
 
-                NewToken.T_str = calloc(j, sizeof(char));
-                memcpy(NewToken.T_str, token_str_comment, j);
+                NewToken.T_str = calloc(strlen(token_str_comment), sizeof(char));
+                strcpy(NewToken.T_str, token_str_comment);
             }
             else if (!strcmp(token_str, "\"")) { // Capture strings
                 char *token_str_content = strtok_r(NULL, "\"", &token_save_ptr);
 
                 int j = strlen(token_str_content);
                 while (strcmp(&token_str_content[--j], " ")); // For removing trailing whitespace
+                token_str_content[j] = '\0';
 
                 NewToken.T_Type = TT_str_content;
                 NewToken.OpType = op_spush;
 
-                NewToken.T_str = calloc(j, sizeof(char));
-                memcpy(NewToken.T_str, token_str_content, j);
+                NewToken.T_str = calloc(strlen(token_str_content), sizeof(char));
+                strcpy(NewToken.T_str, token_str_content);
             }
             else {
                 NewToken.T_Type = TT_null;
@@ -223,7 +227,7 @@ void classifyTokens(Token *Program, int token_count, int flag_verbose){
         } else if (!strcmp(Program[i].T_str, "drop")) {
             Program[i].T_Type = TT_op;
             Program[i].OpType = op_drop;
-        } else if (strIsNumeric(Program[i].T_str)) {
+        } else if (strIsNumeric(Program[i].T_str) && Program[i].T_Type != TT_comment_content && Program[i].T_Type != TT_str_content) {
             Program[i].T_Type = TT_int;
             Program[i].OpType = op_ipush;
             Program[i].T_int = strtol(Program[i].T_str, NULL, 10);
@@ -239,6 +243,9 @@ void classifyTokens(Token *Program, int token_count, int flag_verbose){
         } else if (!strcmp(Program[i].T_str, "cr")) {
             Program[i].T_Type = TT_op;
             Program[i].OpType = op_cr;
+        } else if (!strcmp(Program[i].T_str, "nbsp")) {
+            Program[i].T_Type = TT_op;
+            Program[i].OpType = op_nbsp;
         }
     }
 
@@ -310,6 +317,7 @@ void interpretProgram(Token *Program, int token_count, int flag_verbose) {
                 a = Stack[--stack_height];
 
                 Stack[stack_height++] = a / b;
+                Stack[stack_height++] = a % b;
                 break;
             
             case op_swap:
@@ -400,6 +408,10 @@ void interpretProgram(Token *Program, int token_count, int flag_verbose) {
                 printf("\n");
                 break;
 
+            case op_nbsp:
+                printf(" ");
+                break;
+
             default:
                 break;
 
@@ -424,7 +436,7 @@ void helpMessage() {
     printf("required arguments:\n");
     printf("  -i <file>       open file in interpretation mode\n");
     printf("\noptional arguments:\n");
-    printf("  -v, --verbose   run program in verbose mode\n");
+    printf("  -d, --debug     run program in interpreter debugging mode (show parsing stages)\n");
     printf("  -h, --help      display this help message and exit\n");
 }
 
