@@ -47,14 +47,6 @@ typedef struct { // Program token
     int loc;
 } Token;
 
-typedef struct { // Temporary token which holds entire line of initial file
-    char *lineValue;
-} lineToken;
-
-typedef struct {
-    int n;
-} stackItem;
-
 // ===== Function signatures =====
 
 int main(int argc, char *argv[]);
@@ -126,8 +118,7 @@ void parseTokens(char *file_buffer, int flag_verbose){
     if (flag_verbose) printf("===== Starting Tokenization Stage =====\n");
 
     Token* Program = malloc(sizeof(Token));                       // Program tokens
-    //ProgramConVar* ProgramVars = malloc(sizeof(ProgramConVar));   // Program variables
-
+    
     int len_file = strlen(file_buffer);
     
     int token_count = 0;
@@ -249,7 +240,6 @@ void classifyTokens(Token *Program, int token_count, int flag_verbose){
             Program[i].T_Type = TT_op;
             Program[i].OpType = op_cr;
         }
-
     }
 
     if (flag_verbose) {
