@@ -14,8 +14,7 @@ typedef enum { // Types of tokens allowed in program
     TT_datatype_int, 
     TT_datatype_str, 
     TT_op_noarg, 
-    TT_op_unary, 
-    TT_op_binary,
+    TT_op_arg,
     TT_declaration,
     TT_decl_str,
     TT_var,
@@ -55,9 +54,7 @@ typedef struct { // Variable and constant structure
         int CV_int;
         char *CV_str;
     };
-} ProgramConVar;
-
-
+} ProgramConVar; 
 
 void throwError(const char *filename, int line, int token, char *message, char *operator) {
     printf("%s:%d:%d Error: %s: '%s'\n", filename, line, token, message, operator);
@@ -94,8 +91,6 @@ int tokenize(char *file_buffer,int flag_verbose){
             memcpy(NewToken.T_str, token_str, strlen(token_str));
             if (flag_verbose) printf(" - %d, %d:%d Token string: [%s]\n", token_count, NewToken.line, NewToken.loc, NewToken.T_str);
 
-            //printf(" - Token: [%s]\n", NewToken.);
-
             Program[token_count] = NewToken;
             token_str = strtok_r(NULL, " ", &token_save_ptr);
 
@@ -110,8 +105,8 @@ int tokenize(char *file_buffer,int flag_verbose){
 }
 
 void helpMessage() {
-    printf("North interpreter %s\n", version_string);
-    printf("usage: north [OPTIONS] -i <path_to_program>\n\n");
+    printf("Raft interpreter %s\n", version_string);
+    printf("usage: raft [OPTIONS] -i <path_to_program>\n\n");
     printf("required arguments:\n");
     printf("  -i <file>       open file in interpretation mode\n");
     printf("\noptional arguments:\n");
@@ -164,7 +159,7 @@ int main(int argc, char *argv[]) {
 
             fclose(fp);
 
-            tokenize(file_buffer, flag_verbose);
+            if (!tokenize(file_buffer, flag_verbose)) printf("Error: tokenization failed");
         }
     }
     return 0;
