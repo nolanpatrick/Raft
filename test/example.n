@@ -1,4 +1,4 @@
 { Example program }
 34 33 38 + + iprint
-
-" hello world " sprint
+cr
+" hello world! what's going on? " sprint
