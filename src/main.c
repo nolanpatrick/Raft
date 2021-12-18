@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 //#include <math.h>
-//#include "stack.c"
+#include "stack.c"
 #include "typechecking.c"
 //#include "experiments.c"
 
@@ -10,7 +10,7 @@
 
 #define STACK_MAX 10240
 
-char *version_string = "0.0.1";
+char *version_string = "0.0.3";
 
 typedef enum { // Types of tokens allowed in program
     TT_null,
@@ -401,7 +401,7 @@ void interpretProgram(Token *Program, int token_count, int flag_verbose) {
                 for (int j = 0; j < l; j++) {
                     printf("%c", Stack[--stack_height]);
                 }
-                printf("\n");
+                //printf("\n");
                 break;
 
             case op_cr:
