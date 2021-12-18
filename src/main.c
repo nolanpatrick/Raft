@@ -16,8 +16,9 @@ typedef enum { // Types of tokens allowed in program
     TT_null,
     TT_comment_content,
     TT_str_content,
+    TT_anchor,
     TT_int,
-    TT_op    
+    TT_op 
 } TokenType;
 
 typedef enum {
@@ -36,7 +37,9 @@ typedef enum {
     op_iprint,
     op_sprint,
     op_cr,
-    op_nbsp
+    op_nbsp,
+    op_anchor,
+    op_goto
 } Operations;
 
 typedef struct { // Program token
@@ -167,6 +170,21 @@ void parseTokens(char *file_buffer, int flag_verbose){
                 NewToken.T_str = calloc(strlen(token_str_content), sizeof(char));
                 strcpy(NewToken.T_str, token_str_content);
             }
+            else if (!strcmp(token_str, ":")) { // Capture strings
+                char *token_str_anchor = strtok_r(NULL, ":", &token_save_ptr);
+
+                int j = strlen(token_str_anchor);
+                while (strcmp(&token_str_anchor[--j], " ")); // For removing trailing whitespace
+                token_str_anchor[j] = '\0';
+
+                NewToken.T_Type = TT_anchor;
+                NewToken.OpType = op_anchor;
+                NewToken.T_int = strtol(token_str_anchor, NULL, 10);
+
+                NewToken.T_str = calloc(strlen(token_str_anchor), sizeof(char));
+                strcpy(NewToken.T_str, token_str_anchor);
+            }
+
             else {
                 NewToken.T_Type = TT_null;
                 NewToken.T_str = calloc(strlen(token_str), sizeof(char));
@@ -227,7 +245,7 @@ void classifyTokens(Token *Program, int token_count, int flag_verbose){
         } else if (!strcmp(Program[i].T_str, "drop")) {
             Program[i].T_Type = TT_op;
             Program[i].OpType = op_drop;
-        } else if (strIsNumeric(Program[i].T_str) && Program[i].T_Type != TT_comment_content && Program[i].T_Type != TT_str_content) {
+        } else if (strIsNumeric(Program[i].T_str) && Program[i].T_Type != TT_comment_content && Program[i].T_Type != TT_str_content && Program[i].T_Type != TT_anchor) {
             Program[i].T_Type = TT_int;
             Program[i].OpType = op_ipush;
             Program[i].T_int = strtol(Program[i].T_str, NULL, 10);
@@ -246,6 +264,9 @@ void classifyTokens(Token *Program, int token_count, int flag_verbose){
         } else if (!strcmp(Program[i].T_str, "nbsp")) {
             Program[i].T_Type = TT_op;
             Program[i].OpType = op_nbsp;
+        } else if (!strcmp(Program[i].T_str, "goto")) {
+            Program[i].T_Type = TT_op;
+            Program[i].OpType = op_goto;
         }
     }
 
@@ -259,6 +280,8 @@ void classifyTokens(Token *Program, int token_count, int flag_verbose){
             printf("INT, '%d': %d\n", Program[i].T_int, Program[i].T_Type);
         else if (Program[i].T_Type == TT_op)
             printf("OPR, '%s': %d\n", Program[i].T_str, Program[i].T_Type);
+        else if (Program[i].T_Type == TT_anchor)
+            printf("ANC, '%s': %d\n", Program[i].T_str, Program[i].T_Type);
         else
             printf("000, '%s': %d\n", Program[i].T_str, Program[i].T_Type);
         }
@@ -272,16 +295,19 @@ void interpretProgram(Token *Program, int token_count, int flag_verbose) {
     int stack_height = 0;
     int Stack[STACK_MAX];
 
-    for (int i = 0; i < token_count; i++) {
+    int Anchor[STACK_MAX];
+
+    int program_index = 0;
+    while (program_index < token_count) {
         
-        switch (Program[i].OpType) {
+        switch (Program[program_index].OpType) {
             int a, b, c, d;
             int l, s;
             case op_null:
                 break;
             case op_add:
                 if (stack_height < 2) {
-                    throwError("file", Program[i].line, Program[i].OpType, "Stack contents insufficient for operation", Program[i].T_str);
+                    throwError("file", Program[program_index].line, Program[program_index].OpType, "Stack contents insufficient for operation", Program[program_index].T_str);
                 }
                 b = Stack[--stack_height];
                 a = Stack[--stack_height];
@@ -291,7 +317,7 @@ void interpretProgram(Token *Program, int token_count, int flag_verbose) {
 
             case op_subtract:
                 if (stack_height < 2) {
-                    throwError("file", Program[i].line, Program[i].OpType, "Stack contents insufficient for operation", Program[i].T_str);
+                    throwError("file", Program[program_index].line, Program[program_index].OpType, "Stack contents insufficient for operation", Program[program_index].T_str);
                 }
                 b = Stack[--stack_height];
                 a = Stack[--stack_height];
@@ -301,7 +327,7 @@ void interpretProgram(Token *Program, int token_count, int flag_verbose) {
 
             case op_multiply:
                 if (stack_height < 2) {
-                    throwError("file", Program[i].line, Program[i].OpType, "Stack contents insufficient for operation", Program[i].T_str);
+                    throwError("file", Program[program_index].line, Program[program_index].OpType, "Stack contents insufficient for operation", Program[program_index].T_str);
                 }
                 b = Stack[--stack_height];
                 a = Stack[--stack_height];
@@ -311,7 +337,7 @@ void interpretProgram(Token *Program, int token_count, int flag_verbose) {
 
             case op_divide:
                 if (stack_height < 2) {
-                    throwError("file", Program[i].line, Program[i].OpType, "Stack contents insufficient for operation", Program[i].T_str);
+                    throwError("file", Program[program_index].line, Program[program_index].OpType, "Stack contents insufficient for operation", Program[program_index].T_str);
                 }
                 b = Stack[--stack_height];
                 a = Stack[--stack_height];
@@ -322,7 +348,7 @@ void interpretProgram(Token *Program, int token_count, int flag_verbose) {
             
             case op_swap:
                 if (stack_height < 2) {
-                    throwError("file", Program[i].line, Program[i].OpType, "Stack contents insufficient for operation", Program[i].T_str);
+                    throwError("file", Program[program_index].line, Program[program_index].OpType, "Stack contents insufficient for operation", Program[program_index].T_str);
                 }
                 b = Stack[--stack_height];
                 a = Stack[--stack_height];
@@ -333,7 +359,7 @@ void interpretProgram(Token *Program, int token_count, int flag_verbose) {
             
             case op_dup:
                 if (stack_height < 2) {
-                    throwError("file", Program[i].line, Program[i].OpType, "Stack contents insufficient for operation", Program[i].T_str);
+                    throwError("file", Program[program_index].line, Program[program_index].OpType, "Stack contents insufficient for operation", Program[program_index].T_str);
                 }
                 a = Stack[--stack_height];
 
@@ -343,7 +369,7 @@ void interpretProgram(Token *Program, int token_count, int flag_verbose) {
 
             case op_over:
                 if (stack_height < 2) {
-                    throwError("file", Program[i].line, Program[i].OpType, "Stack contents insufficient for operation", Program[i].T_str);
+                    throwError("file", Program[program_index].line, Program[program_index].OpType, "Stack contents insufficient for operation", Program[program_index].T_str);
                 }
                 b = Stack[--stack_height];
                 a = Stack[--stack_height];
@@ -355,7 +381,7 @@ void interpretProgram(Token *Program, int token_count, int flag_verbose) {
 
             case op_rot:
                 if (stack_height < 3) {
-                    throwError("file", Program[i].line, Program[i].OpType, "Stack contents insufficient for operation", Program[i].T_str);
+                    throwError("file", Program[program_index].line, Program[program_index].OpType, "Stack contents insufficient for operation", Program[program_index].T_str);
                 }
                 c = Stack[--stack_height];
                 b = Stack[--stack_height];
@@ -368,26 +394,26 @@ void interpretProgram(Token *Program, int token_count, int flag_verbose) {
 
             case op_drop:
                 if (stack_height < 1) {
-                    throwError("file", Program[i].line, Program[i].OpType, "Stack contents insufficient for operation", Program[i].T_str);
+                    throwError("file", Program[program_index].line, Program[program_index].OpType, "Stack contents insufficient for operation", Program[program_index].T_str);
                 }
                 a = Stack[--stack_height];
                 break;
 
             case op_ipush:
-                Stack[stack_height++] = Program[i].T_int;
+                Stack[stack_height++] = Program[program_index].T_int;
                 break;
 
             case op_spush:
-                l = strlen(Program[i].T_str) - 1;
+                l = strlen(Program[program_index].T_str) - 1;
                 for (int j = l; j >= 0; j--) {
-                    Stack[stack_height++] = Program[i].T_str[j];
+                    Stack[stack_height++] = Program[program_index].T_str[j];
                 }
-                Stack[stack_height++] = strlen(Program[i].T_str);
+                Stack[stack_height++] = strlen(Program[program_index].T_str);
                 break;
 
             case op_iprint:
                 if (stack_height < 1) {
-                    throwError("file", Program[i].line, Program[i].OpType, "Stack contents insufficient for operation", Program[i].T_str);
+                    throwError("file", Program[program_index].line, Program[program_index].OpType, "Stack contents insufficient for operation", Program[program_index].T_str);
                 }
                 a = Stack[--stack_height];
                 printf("%d", a);
@@ -395,13 +421,22 @@ void interpretProgram(Token *Program, int token_count, int flag_verbose) {
 
             case op_sprint:
                 if (stack_height < 1) {
-                    throwError("file", Program[i].line, Program[i].OpType, "Stack contents insufficient for operation", Program[i].T_str);
+                    throwError("file", Program[program_index].line, Program[program_index].OpType, "Stack contents insufficient for operation", Program[program_index].T_str);
                 }
                 l = Stack[--stack_height];
                 for (int j = 0; j < l; j++) {
                     printf("%c", Stack[--stack_height]);
                 }
                 //printf("\n");
+                break;
+
+            case op_anchor:
+                Anchor[Program[program_index].T_int] = program_index;
+                break;
+
+            case op_goto:
+                a = Stack[--stack_height];
+                program_index = Anchor[a];
                 break;
 
             case op_cr:
@@ -416,6 +451,7 @@ void interpretProgram(Token *Program, int token_count, int flag_verbose) {
                 break;
 
         }
+        program_index++;
     }
     if (stack_height > 0) {
         printf("[WARN] Unhandled data on stack: ");

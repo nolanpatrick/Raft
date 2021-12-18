@@ -19,6 +19,9 @@ iprint : Print integer on top of stack. Pops integer after printing.
 nbsp : Print a space (does not add a newline)
 cr : Carriage return, adds a line-break between elements
 
+: : Denotes anchor point for goto statements. (i.e. : 0 :)
+goto : Go to anchor point indicated by int at top of stack
+
 swap : Swap top two items on stack
 dup: Duplicate top item on stack
 over: Copy second item to top of stack
