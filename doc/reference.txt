@@ -16,6 +16,8 @@ Valid Instructions:
 
 sprint : Print string based on ASCII representation and length integer. Pops values as they are printed.
 iprint : Print integer on top of stack. Pops integer after printing.
+nbsp : Print a space (does not add a newline)
+cr : Carriage return, adds a line-break between elements
 
 swap : Swap top two items on stack
 dup: Duplicate top item on stack
