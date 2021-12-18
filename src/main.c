@@ -7,7 +7,6 @@
 //#include "experiments.c"
 
 #define FILE_BUF_MAX 640000 // 640 KB
-
 #define STACK_MAX 10240
 
 char *version_string = "0.0.3";
@@ -66,6 +65,9 @@ void throwError(const char *filename, int line, int token, char *message, char *
 void helpMessage();
 
 // ===============================
+
+int anchor_count = 0;
+int Anchor[STACK_MAX]; // Hold goto anchor point locations
 
 int main(int argc, char *argv[]) {
 
@@ -183,6 +185,9 @@ void parseTokens(char *file_buffer, int flag_verbose){
 
                 NewToken.T_str = calloc(strlen(token_str_anchor), sizeof(char));
                 strcpy(NewToken.T_str, token_str_anchor);
+
+                Anchor[NewToken.T_int] = token_count;
+                anchor_count++;
             }
 
             else {
@@ -267,6 +272,8 @@ void classifyTokens(Token *Program, int token_count, int flag_verbose){
         } else if (!strcmp(Program[i].T_str, "goto")) {
             Program[i].T_Type = TT_op;
             Program[i].OpType = op_goto;
+        } if (Program[i].T_Type == TT_anchor) {
+            
         }
     }
 
@@ -295,7 +302,13 @@ void interpretProgram(Token *Program, int token_count, int flag_verbose) {
     int stack_height = 0;
     int Stack[STACK_MAX];
 
-    int Anchor[STACK_MAX];
+    if (flag_verbose) {
+        printf("===== Goto anchors =====\n");
+        for (int i = 0; i < anchor_count; i++) {
+            printf("  Index: %d, Loc: %d\n", i, Anchor[i]);
+        } printf("========================\n");
+    }
+    
 
     int program_index = 0;
     while (program_index < token_count) {
@@ -303,6 +316,7 @@ void interpretProgram(Token *Program, int token_count, int flag_verbose) {
         switch (Program[program_index].OpType) {
             int a, b, c, d;
             int l, s;
+            int jump_valid;
             case op_null:
                 break;
             case op_add:
@@ -430,14 +444,24 @@ void interpretProgram(Token *Program, int token_count, int flag_verbose) {
                 //printf("\n");
                 break;
 
-            case op_anchor:
+            /* case op_anchor:
                 Anchor[Program[program_index].T_int] = program_index;
-                break;
+                anchor_count++;
+                break; */
 
             case op_goto:
+                if (anchor_count == 0) {
+                    throwError("file", Program[program_index].line, Program[program_index].OpType, "No anchor points have been defined", Program[program_index].T_str);
+                }
                 a = Stack[--stack_height];
-                program_index = Anchor[a];
-                break;
+                if (a < anchor_count) {
+                    program_index = Anchor[a];
+                    break;
+                } else {
+                    throwError("file", Program[program_index].line, Program[program_index].OpType, "Invalid jump location", Program[program_index].T_str);
+                    break;
+                }
+                
 
             case op_cr:
                 printf("\n");
