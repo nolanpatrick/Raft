@@ -1,5 +1,6 @@
 { Example program }
 34 33 38 + + iprint
+2 goto
 cr
 : 0 :
 { 600 / 11 = 54 + r6 }
@@ -9,5 +10,7 @@ nbsp
 cr
 : 1 :
 " Hello there! What's going on? " sprint nbsp " ... " sprint nbsp " Just another string on the same line, isnt that cool? " sprint
-cr 1 goto
+cr
+: 2 :
 { 5 } { to confirm whether numeric comment bug is fixed }
+" the end... " sprint
