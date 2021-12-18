@@ -6,5 +6,5 @@ cr
 nbsp
 600 11 / swap drop iprint { 600 % 11 }
 cr
-" hello world! what's going on? " sprint
+" Hello there! What's going on? " sprint nbsp " ... " sprint nbsp " Just another string on the same line, isnt that cool? " sprint
 { 5 } { to confirm whether numeric comment bug is fixed }
