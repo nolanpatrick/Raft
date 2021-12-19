@@ -26,19 +26,30 @@ typedef enum {
     op_subtract,
     op_multiply,
     op_divide,
+
+    op_gt,
+    op_lt,
+    op_eq,
+    op_and,
+    op_or,
+
     op_swap,
     op_dup,
     op_over,
     op_rot,
     op_drop,
+
     op_ipush,
     op_spush,
     op_iprint,
     op_sprint,
+
     op_cr,
     op_nbsp,
     op_anchor,
-    op_goto
+    op_goto,
+
+    op_dstack
 } Operations;
 
 typedef struct { // Program token
@@ -272,8 +283,24 @@ void classifyTokens(Token *Program, int token_count, int flag_verbose){
         } else if (!strcmp(Program[i].T_str, "goto")) {
             Program[i].T_Type = TT_op;
             Program[i].OpType = op_goto;
-        } if (Program[i].T_Type == TT_anchor) {
-            
+        } else if (!strcmp(Program[i].T_str, "<")) {
+            Program[i].T_Type = TT_op;
+            Program[i].OpType = op_lt;
+        } else if (!strcmp(Program[i].T_str, ">")) {
+            Program[i].T_Type = TT_op;
+            Program[i].OpType = op_gt;
+        } else if (!strcmp(Program[i].T_str, "eq")) {
+            Program[i].T_Type = TT_op;
+            Program[i].OpType = op_eq;
+        } else if (!strcmp(Program[i].T_str, "and")) {
+            Program[i].T_Type = TT_op;
+            Program[i].OpType = op_and;
+        } else if (!strcmp(Program[i].T_str, "or")) {
+            Program[i].T_Type = TT_op;
+            Program[i].OpType = op_or;
+        } else if (!strcmp(Program[i].T_str, "dstack")) {
+            Program[i].T_Type = TT_op;
+            Program[i].OpType = op_dstack;
         }
     }
 
@@ -358,6 +385,56 @@ void interpretProgram(Token *Program, int token_count, int flag_verbose) {
 
                 Stack[stack_height++] = a / b;
                 Stack[stack_height++] = a % b;
+                break;
+
+            case op_lt:
+                if (stack_height < 2) {
+                    throwError("file", Program[program_index].line, Program[program_index].OpType, "Stack contents insufficient for operation", Program[program_index].T_str);
+                }
+                b = Stack[--stack_height];
+                a = Stack[--stack_height];
+
+                Stack[stack_height++] = a < b;
+                break;
+
+            case op_gt:
+                if (stack_height < 2) {
+                    throwError("file", Program[program_index].line, Program[program_index].OpType, "Stack contents insufficient for operation", Program[program_index].T_str);
+                }
+                b = Stack[--stack_height];
+                a = Stack[--stack_height];
+
+                Stack[stack_height++] = a > b;
+                break;
+
+            case op_eq:
+                if (stack_height < 2) {
+                    throwError("file", Program[program_index].line, Program[program_index].OpType, "Stack contents insufficient for operation", Program[program_index].T_str);
+                }
+                b = Stack[--stack_height];
+                a = Stack[--stack_height];
+
+                Stack[stack_height++] = a == b;
+                break;
+
+            case op_and:
+                if (stack_height < 2) {
+                    throwError("file", Program[program_index].line, Program[program_index].OpType, "Stack contents insufficient for operation", Program[program_index].T_str);
+                }
+                b = Stack[--stack_height];
+                a = Stack[--stack_height];
+
+                Stack[stack_height++] = a && b;
+                break;
+
+            case op_or:
+                if (stack_height < 2) {
+                    throwError("file", Program[program_index].line, Program[program_index].OpType, "Stack contents insufficient for operation", Program[program_index].T_str);
+                }
+                b = Stack[--stack_height];
+                a = Stack[--stack_height];
+
+                Stack[stack_height++] = a || b;
                 break;
             
             case op_swap:
@@ -461,6 +538,12 @@ void interpretProgram(Token *Program, int token_count, int flag_verbose) {
                     throwError("file", Program[program_index].line, Program[program_index].OpType, "Invalid jump location", Program[program_index].T_str);
                     break;
                 }
+
+            case op_dstack:
+                printf("stack (%d): [", stack_height);
+                for (int j = 0; j < stack_height; j++){
+                    printf("%d", Stack[j]);
+                } printf("]\n");
                 
 
             case op_cr:
