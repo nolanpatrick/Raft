@@ -6,7 +6,7 @@
 #define FILE_BUF_MAX 640000 // 640 KB
 #define STACK_MAX 10240
 
-char *version_string = "0.0.4";
+char *version_string = "0.4.1";
 
 typedef enum { // Types of tokens allowed in program
     TT_null,
