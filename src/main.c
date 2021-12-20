@@ -1,10 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-//#include <math.h>
-#include "stack.c"
 #include "typechecking.c"
-//#include "experiments.c"
 
 #define FILE_BUF_MAX 640000 // 640 KB
 #define STACK_MAX 10240
