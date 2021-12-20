@@ -12,45 +12,62 @@ A build script for Unix-like systems will be added soon.
 ## Project Milestones
 
 - [ ] Language Features
-    - [ ] Types
-        - [ ] Integers
-        - [ ] Strings (Stored as ASCII values, followed by a length integer)
-    - [ ] Arithmetic
-        - [ ] Addition
-        - [ ] Subtraction
-        - [ ] Multiplication
-        - [ ] Euclidean Division
-    - [ ] Boolean
-        - [ ] Greater-than
-        - [ ] Less-than
-        - [ ] Equivalent-to
-        - [ ] And
-        - [ ] Or
-    - [ ] Stack Manipulation
-        - [ ] Swap
-        - [ ] Rotate
-        - [ ] Over
-        - [ ] Duplicate
-        - [ ] Drop
-    - [ ] Screen Output
-        - [ ] Integers
-        - [ ] Strings
-        - [ ] General-use spaces
-        - [ ] Line-breaks
+    - [x] Types
+        - [x] Integers
+        - [x] Strings (Stored as ASCII values, followed by a length integer)
+    - [x] Arithmetic
+        - [x] Addition
+        - [x] Subtraction
+        - [x] Multiplication
+        - [x] Euclidean Division
+    - [x] Boolean
+        - [x] Greater-than
+        - [x] Less-than
+        - [x] Equivalent-to
+        - [x] And
+        - [x] Or
+    - [x] Stack Manipulation
+        - [x] Swap
+        - [x] Rotate
+        - [x] Over
+        - [x] Duplicate
+        - [x] Drop
+    - [x] Screen Output
+        - [x] Integers
+        - [x] Strings
+        - [x] General-use spaces
+        - [x] Line-breaks
     - [ ] Loops
-        - [ ] Do-While
+        - [x] Do-While
         - [ ] For
         - [ ] While
     - [ ] Conditionals
         - [ ] If-Then-Else
+    - [ ] Modularity
+        - [ ] Functions
+        - [ ] Libraries (requires functions)
     - [ ] Structural Navigation
-        - [ ] Goto
+        - [x] Goto
         - [ ] Return/Exit
-- [ ] Error-checking
-    - [x] Unknown keyword detection
-    - [ ] Typechecking (in progress)
+    - [ ] Variables & Constants
+        - [ ] Integer constants
+        - [ ] Integer variables
+        - [ ] String constants
+        - [ ] String variables
+    - [ ] Memory Manipulation
+        - [ ] Pointers
+- [ ] Interpreter Features
+    - [x] Help menu
+    - [x] Flags
+    - [x] Read from file
+    - [ ] Interactive mode (Python-style interpreter)
+    - [x] Pre-processing stage (required for typechecking/forward jumps) 
+    - [ ] Error-checking
+        - [x] Unknown keyword detection
+        - [ ] Typechecking (in progress)
 
+More may be added in the future as I come up with features I would like to implement. Feature suggestions may be submitted as issues to this repository.
 
 ## Commands & Operations
 
-Check out doc/reference.txt for list of implemented operations.
+Check out doc/reference.txt for list of implemented operations. Further documentation coming soon.
