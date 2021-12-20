@@ -49,6 +49,9 @@ typedef enum {
     op_anchor,
     op_goto,
 
+    op_do,
+    op_while,
+
     op_dstack
 } Operations;
 
@@ -75,10 +78,12 @@ void throwError(const char *filename, int line, int token, char *message, char *
 
 void helpMessage();
 
-// ===============================
+// ===== Jump anchors =============
 
 int anchor_count = 0;
 int Anchor[STACK_MAX]; // Hold goto anchor point locations
+
+// ===============================
 
 int main(int argc, char *argv[]) {
 
@@ -298,6 +303,12 @@ void classifyTokens(Token *Program, int token_count, int flag_verbose){
         } else if (!strcmp(Program[i].T_str, "or")) {
             Program[i].T_Type = TT_op;
             Program[i].OpType = op_or;
+        } else if (!strcmp(Program[i].T_str, "do")) {
+            Program[i].T_Type = TT_op;
+            Program[i].OpType = op_do;
+        } else if (!strcmp(Program[i].T_str, "while")) {
+            Program[i].T_Type = TT_op;
+            Program[i].OpType = op_while;
         } else if (!strcmp(Program[i].T_str, "dstack")) {
             Program[i].T_Type = TT_op;
             Program[i].OpType = op_dstack;
@@ -335,7 +346,10 @@ void interpretProgram(Token *Program, int token_count, int flag_verbose) {
             printf("  Index: %d, Loc: %d\n", i, Anchor[i]);
         } printf("========================\n");
     }
-    
+
+
+    int RuntimeAnchorStack[STACK_MAX];
+    int runtime_anchor_stack_height = 0;
 
     int program_index = 0;
     while (program_index < token_count) {
@@ -449,7 +463,7 @@ void interpretProgram(Token *Program, int token_count, int flag_verbose) {
                 break;
             
             case op_dup:
-                if (stack_height < 2) {
+                if (stack_height < 1) {
                     throwError("file", Program[program_index].line, Program[program_index].OpType, "Stack contents insufficient for operation", Program[program_index].T_str);
                 }
                 a = Stack[--stack_height];
@@ -536,14 +550,31 @@ void interpretProgram(Token *Program, int token_count, int flag_verbose) {
                     break;
                 } else {
                     throwError("file", Program[program_index].line, Program[program_index].OpType, "Invalid jump location", Program[program_index].T_str);
+                }
+
+            case op_do:
+                RuntimeAnchorStack[++runtime_anchor_stack_height] = program_index;
+                break;
+
+            case op_while:
+                if (runtime_anchor_stack_height == 0) {
+                    throwError("file", Program[program_index].line, Program[program_index].OpType, "Invalid loop: No corresponding 'do' statement has been defined", Program[program_index].T_str);
+                }
+                a = Stack[--stack_height];
+                if (a) {
+                    program_index = RuntimeAnchorStack[runtime_anchor_stack_height];
+                    break;
+                } else {
+                    runtime_anchor_stack_height--;
                     break;
                 }
 
             case op_dstack:
-                printf("stack (%d): [", stack_height);
+                printf("=== start dstack ===\n -> called at loc: %d\n -> current state (%d): [", program_index, stack_height);
                 for (int j = 0; j < stack_height; j++){
-                    printf("%d", Stack[j]);
-                } printf("]\n");
+                    printf(" %d ", Stack[j]);
+                } printf("] (top)\n====================");
+                break;
                 
 
             case op_cr:
@@ -569,7 +600,7 @@ void interpretProgram(Token *Program, int token_count, int flag_verbose) {
 }
 
 void throwError(const char *filename, int line, int token, char *message, char *operator) {
-    printf("%s:%d:%d Error: %s: '%s'\n", filename, line, token, message, operator);
+    printf("\n%s:%d:%d Error: %s: '%s'\n", filename, line, token, message, operator);
     exit(1);
 }
 
