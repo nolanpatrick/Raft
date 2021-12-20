@@ -1,6 +1,6 @@
 { Example program }
 34 33 38 + + iprint
-2 goto
+{ 2 goto }
 cr
 : 0 :
 { 600 / 11 = 54 + r6 }
@@ -14,3 +14,7 @@ cr
 : 2 :
 { 5 } { to confirm whether numeric comment bug is fixed }
 " the end... " sprint
+cr cr
+{  }
+" hello world " sprint cr
+" hello world " dstack sprint

@@ -1,0 +1,8 @@
+{ Loop evaluation program }
+
+5 do
+    1 +
+    " test " sprint cr
+dup 10 < while 
+
+iprint
