@@ -2,30 +2,51 @@
 
 All instructions must be separated by a space (space-delimited)
 
-Valid Instructions:
+Fully-Implemented Instructions:
 
-" <str> " : Denote string literal (stored as ASCII characters followed by a length integer)
+** Base Operations **
+<int>     : Push int onto stack (i.e. 37)
+" <str> " : Denote string literal (stored as ASCII characters followed by a length integer).
+            Push reversed ASCII representation of string, followed by length of string, to top of stack. 
+            Must be surrounded by (") tokens.
 
+** Arithmetic Operators **
 + : Add top two integers on stack
 - : Subtract top two integers on stack
 * : Multiply top two integers on stack
 / : Divide top two integers on stack
 
-<int> : Push int onto stack (i.e. 37)
-<str> : Push reversed ASCII representation of string, followed by length of string, to top of stack. (must be surrounded by (") tokens)
+** Boolean Operators **
+(All boolean operators consume their arguments. If you need to keep the initial arguments, as in the case of a loop, use 'dup' first.)
+<   : Less than
+>   : Greater than
+eq  : Is equal to (cannot be used for declarations)
+and : And
+or  : Or
 
+** Printing to the Screen **
 sprint : Print string based on ASCII representation and length integer. Pops values as they are printed.
-iprint : Print integer on top of stack. Pops integer after printing.
-nbsp : Print a space (does not add a newline)
-cr : Carriage return, adds a line-break between elements
+iprint : Print integer on top of stack. Pops integer while printing.
+nbsp   : Print a space (does not add a newline)
+cr     : Carriage return, adds a line-break between elements
 
+** Stack Manipulation **
 swap : Swap top two items on stack
-dup: Duplicate top item on stack
-over: Copy second item to top of stack
-rot: Move third item to top of stack
-drop: Pop top item from stack
+dup  : Duplicate top item on stack
+over : Copy second item to top of stack
+rot  : Move third item to top of stack
+drop : Pop top item from stack
 
+** Comments **
 { <text> } : Denote comment. Nothing between curly-braces will be executed.
 
+** Program Structure **
+goto      : Go to anchor point indicated by int at top of stack (i.e. 3 goto). Allows for both progressive and regressive jumping.
 : <int> : : Denotes anchor point for goto statements. (i.e. : 0 :)
-goto : Go to anchor point indicated by int at top of stack
+
+** Loops **
+while : Do-wwhile loop eval statement
+do    : Indicates beginning of do-while loop.
+
+** Debugging **
+dstack : Show location, number of elements on the stack, and a readout of the entire stack
