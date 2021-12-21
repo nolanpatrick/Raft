@@ -1,11 +1,12 @@
 # Raft
 
 This project originally started as an attempt to build a basic Forth interpreter in C as a programming exercise. However, it very quickly began evolving into its own distinct language. As it is in the very early stages of active development, many features may be broken or partially-implemented. As such, it is not advisable to rely on functionality until things have become more stable.
+
 The nature of this project is inspired by Alexey Kutepov (Tsoding)'s [Porth](https://gitlab.com/tsoding/porth) language.
 
 ## Compiling the Interpreter
 
-The build script for Windows, ```build-win64.cmd``` is set up for use with a MINGW-w64 GCC installation. As the compilation does not require any special flags, options, or features, you can build it with any C compiler.
+The build script for Windows, ```build-win64.cmd```, is set up for use with a MINGW-w64 GCC installation (you may need to update the executable path to reflect your specific system). As the compilation does not require any special flags, options, or features, you can build it with any C compiler.
 
 A build script for Unix-like systems will be added soon.
 
@@ -56,6 +57,10 @@ A build script for Unix-like systems will be added soon.
         - [ ] String variables
     - [ ] Memory Manipulation
         - [ ] Pointers
+    - [ ] I/O
+        - [ ] User input
+        - [ ] Read from files
+        - [ ] Write to files
 - [ ] Interpreter Features
     - [x] Help menu
     - [x] Flags
@@ -66,7 +71,7 @@ A build script for Unix-like systems will be added soon.
         - [x] Unknown keyword detection
         - [ ] Typechecking (in progress)
 
-More may be added in the future as I come up with features I would like to implement. Feature suggestions may be submitted as issues to this repository.
+More may be added in the future as I come up with features I would like to implement. Feature suggestions may be submitted as issues with the tag [FEATURE] to this repository.
 
 ## Commands & Operations
 
