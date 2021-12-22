@@ -7,6 +7,7 @@
 #define STACK_MAX 10240
 
 char *version_string = "0.4.1";
+char global_filepath[1024];
 
 typedef enum { // Types of tokens allowed in program
     TT_null,
@@ -38,7 +39,7 @@ typedef enum {
 
     op_ipush,
     op_spush,
-    op_iprint,
+    op_iprint
     op_sprint,
 
     op_cr,
@@ -86,7 +87,6 @@ int main(int argc, char *argv[]) {
 
     int flag_debug = 0;    // Show parsing stages and debug info if enabled
     int flag_run = 0;      // Whether or not to begin parsing and execution
-    char *input_path_argv; // Path to file as given in argument
 
     if (argc == 1) helpMessage();
 
@@ -97,8 +97,7 @@ int main(int argc, char *argv[]) {
             exit(1);
         }
         if (!strcmp(argv[i], "-r") && argv[i+1] != NULL) {
-            input_path_argv = calloc(strlen(argv[i+1]), sizeof(char));
-            strcpy(input_path_argv, argv[i+1]);
+            strcpy(global_filepath, argv[i+1]);
             flag_run = 1;
         }
         if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")){
@@ -106,18 +105,18 @@ int main(int argc, char *argv[]) {
             exit(0);
         }
         if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "--debug")) {
-            printf("[WARN] Enabled debugging mode\n\n");
+            printf("[WARN] Enabled debugging mode\n");
             flag_debug = 1;
         }
 
     }
     if (flag_run) {
 
-        if (flag_debug) printf("[INFO] Reading %s\n", input_path_argv);
-        FILE *fp = fopen(input_path_argv, "r");
+        if (flag_debug) printf("[INFO] Reading %s\n", global_filepath);
+        FILE *fp = fopen(global_filepath, "r");
 
         if (fp == NULL) {
-            fprintf(stderr, "Error: Could not read file");
+            printf("Error: could not read file: \'%s\'", global_filepath);
         } else {
             // Read file
             char *file_buffer = (char *) malloc (FILE_BUF_MAX);
@@ -137,10 +136,9 @@ int main(int argc, char *argv[]) {
 void parseTokens(char *file_buffer, int flag_debug){
     if (flag_debug) printf("===== Starting Tokenization Stage =====\n");
 
-    Token* Program = malloc(sizeof(Token));                       // Program tokens
+    Token* Program = malloc(sizeof(Token)); // Program tokens
 
     int len_file = strlen(file_buffer);
-    
     int token_count = 0;
     //int program_var_count = 0;
 
@@ -151,7 +149,9 @@ void parseTokens(char *file_buffer, int flag_debug){
     char *line_token_str = strtok_r(file_buffer, "\n", &line_save_ptr);
     
     while (line_token_str) {
+        line_count++; // Line count starts at zero, most editors start at 1.
         char *token_str = strtok_r(line_token_str, " ", &token_save_ptr);
+
         while (token_str) {
             Program = realloc(Program, sizeof(Token) * (token_count + 2));
 
@@ -219,13 +219,12 @@ void parseTokens(char *file_buffer, int flag_debug){
             token_count++;
             line_token_count++;
         }
-        //printf("=== Line ===\n");
+
         line_token_str = strtok_r(NULL, "\n", &line_save_ptr);
         line_token_count = 0;
-        line_count++;
     }
     if (token_count == 0) {
-        printf("Error: tokenization failed or file empty");
+        printf("%s:0:0: Error: tokenization failed or file empty", global_filepath);
         exit(1);
     } else {
         classifyTokens(Program, token_count, flag_debug);
@@ -309,8 +308,8 @@ void classifyTokens(Token *Program, int token_count, int flag_debug){
         } else if (!strcmp(Program[i].T_str, "dstack")) {
             Program[i].T_Type = TT_op;
             Program[i].OpType = op_dstack;
-        } else if (Program[i].T_Type != TT_comment_content && Program[i].T_Type != TT_str_content) {
-            throwError("file", Program[i].line, Program[i].loc, "Unknown keyword", Program[i].T_str);
+        } else if (Program[i].T_Type != TT_comment_content && Program[i].T_Type != TT_str_content && Program[i].T_Type != TT_anchor) {
+            throwError(global_filepath, Program[i].line, Program[i].loc, "Unknown keyword", Program[i].T_str);
         }
     }
 
@@ -362,7 +361,7 @@ void interpretProgram(Token *Program, int token_count, int flag_debug) {
                 break;
             case op_add:
                 if (stack_height < 2) {
-                    throwError("file", Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
+                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
                 }
                 b = Stack[--stack_height];
                 a = Stack[--stack_height];
@@ -372,7 +371,7 @@ void interpretProgram(Token *Program, int token_count, int flag_debug) {
 
             case op_subtract:
                 if (stack_height < 2) {
-                    throwError("file", Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
+                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
                 }
                 b = Stack[--stack_height];
                 a = Stack[--stack_height];
@@ -382,7 +381,7 @@ void interpretProgram(Token *Program, int token_count, int flag_debug) {
 
             case op_multiply:
                 if (stack_height < 2) {
-                    throwError("file", Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
+                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
                 }
                 b = Stack[--stack_height];
                 a = Stack[--stack_height];
@@ -392,7 +391,7 @@ void interpretProgram(Token *Program, int token_count, int flag_debug) {
 
             case op_divide:
                 if (stack_height < 2) {
-                    throwError("file", Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
+                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
                 }
                 b = Stack[--stack_height];
                 a = Stack[--stack_height];
@@ -403,7 +402,7 @@ void interpretProgram(Token *Program, int token_count, int flag_debug) {
 
             case op_lt:
                 if (stack_height < 2) {
-                    throwError("file", Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
+                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
                 }
                 b = Stack[--stack_height];
                 a = Stack[--stack_height];
@@ -413,7 +412,7 @@ void interpretProgram(Token *Program, int token_count, int flag_debug) {
 
             case op_gt:
                 if (stack_height < 2) {
-                    throwError("file", Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
+                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
                 }
                 b = Stack[--stack_height];
                 a = Stack[--stack_height];
@@ -423,7 +422,7 @@ void interpretProgram(Token *Program, int token_count, int flag_debug) {
 
             case op_eq:
                 if (stack_height < 2) {
-                    throwError("file", Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
+                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
                 }
                 b = Stack[--stack_height];
                 a = Stack[--stack_height];
@@ -433,7 +432,7 @@ void interpretProgram(Token *Program, int token_count, int flag_debug) {
 
             case op_and:
                 if (stack_height < 2) {
-                    throwError("file", Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
+                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
                 }
                 b = Stack[--stack_height];
                 a = Stack[--stack_height];
@@ -443,7 +442,7 @@ void interpretProgram(Token *Program, int token_count, int flag_debug) {
 
             case op_or:
                 if (stack_height < 2) {
-                    throwError("file", Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
+                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
                 }
                 b = Stack[--stack_height];
                 a = Stack[--stack_height];
@@ -453,7 +452,7 @@ void interpretProgram(Token *Program, int token_count, int flag_debug) {
             
             case op_swap:
                 if (stack_height < 2) {
-                    throwError("file", Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
+                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
                 }
                 b = Stack[--stack_height];
                 a = Stack[--stack_height];
@@ -464,7 +463,7 @@ void interpretProgram(Token *Program, int token_count, int flag_debug) {
             
             case op_dup:
                 if (stack_height < 1) {
-                    throwError("file", Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
+                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
                 }
                 a = Stack[--stack_height];
 
@@ -474,7 +473,7 @@ void interpretProgram(Token *Program, int token_count, int flag_debug) {
 
             case op_over:
                 if (stack_height < 2) {
-                    throwError("file", Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
+                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
                 }
                 b = Stack[--stack_height];
                 a = Stack[--stack_height];
@@ -486,7 +485,7 @@ void interpretProgram(Token *Program, int token_count, int flag_debug) {
 
             case op_rot:
                 if (stack_height < 3) {
-                    throwError("file", Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
+                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
                 }
                 c = Stack[--stack_height];
                 b = Stack[--stack_height];
@@ -499,7 +498,7 @@ void interpretProgram(Token *Program, int token_count, int flag_debug) {
 
             case op_drop:
                 if (stack_height < 1) {
-                    throwError("file", Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
+                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
                 }
                 a = Stack[--stack_height];
                 break;
@@ -518,7 +517,7 @@ void interpretProgram(Token *Program, int token_count, int flag_debug) {
 
             case op_iprint:
                 if (stack_height < 1) {
-                    throwError("file", Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
+                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
                 }
                 a = Stack[--stack_height];
                 printf("%d", a);
@@ -526,7 +525,7 @@ void interpretProgram(Token *Program, int token_count, int flag_debug) {
 
             case op_sprint:
                 if (stack_height < 1) {
-                    throwError("file", Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
+                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
                 }
                 l = Stack[--stack_height];
                 for (int j = 0; j < l; j++) {
@@ -542,14 +541,14 @@ void interpretProgram(Token *Program, int token_count, int flag_debug) {
 
             case op_goto:
                 if (anchor_count == 0) {
-                    throwError("file", Program[program_index].line, Program[program_index].loc, "No anchor points have been defined", Program[program_index].T_str);
+                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "No anchor points have been defined", Program[program_index].T_str);
                 }
                 a = Stack[--stack_height];
                 if (a < anchor_count) {
                     program_index = Anchor[a];
                     break;
                 } else {
-                    throwError("file", Program[program_index].line, Program[program_index].loc, "Invalid jump location", Program[program_index].T_str);
+                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "Invalid jump location", Program[program_index].T_str);
                 }
 
             case op_do:
@@ -558,7 +557,7 @@ void interpretProgram(Token *Program, int token_count, int flag_debug) {
 
             case op_while:
                 if (runtime_anchor_stack_height == 0) {
-                    throwError("file", Program[program_index].line, Program[program_index].loc, "Invalid loop: No corresponding 'do' statement has been defined", Program[program_index].T_str);
+                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "Invalid loop: No corresponding 'do' statement has been defined", Program[program_index].T_str);
                 }
                 a = Stack[--stack_height];
                 if (a) {

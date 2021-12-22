@@ -71,7 +71,7 @@ A build script for Unix-like systems will be added soon.
         - [x] Unknown keyword detection
         - [ ] Typechecking (in progress)
 
-More may be added in the future as I come up with features I would like to implement. Feature suggestions may be submitted as issues with the tag [FEATURE] to this repository.
+More may be added in the future as I come up with features I would like to implement. Feature suggestions may be submitted to this project as issues. When submitting a feature request, please include the tag [FEATURE] at the beginning of the subject line.
 
 ## Commands & Operations
 

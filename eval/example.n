@@ -4,8 +4,8 @@
 cr
 : 0 :
 { 600 / 11 = 54 + r6 }
-600 11 / drop iprint { int 600 / 11 }
-nbsp
+600 11 / iprint nbsp iprint
+cr cr
 600 11 / swap drop iprint { 600 % 11 }
 cr
 : 1 :
@@ -18,3 +18,4 @@ cr cr
 {  }
 " hello world " sprint cr
 " hello world " dstack sprint
+5 4 6 rot dstack drop drop drop

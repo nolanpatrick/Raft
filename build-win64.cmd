@@ -7,4 +7,4 @@ IF "%2"=="/c" cls
 
 %GCCPATH%\gcc.exe %SRC%\main.c -o %OUT%\raft.exe
 
-IF "%1"=="/r" %OUT%\raft.exe --debug -r .\eval\loops.n
+IF "%1"=="/r" %OUT%\raft.exe --debug -r .\eval\example.n
