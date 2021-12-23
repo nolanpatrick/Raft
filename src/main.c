@@ -161,8 +161,8 @@ void parseTokens(char *file_buffer, int flag_debug){
             NewToken.line = line_count;
             NewToken.loc = line_token_count; // TODO: Fix token count around comments and strings
 
-            if (!strcmp(token_str, "{")) { // Capture comments
-                char *token_str_comment = strtok_r(NULL, "}", &token_save_ptr);
+            if (!strcmp(token_str, "(")) { // Capture comments
+                char *token_str_comment = strtok_r(NULL, ")", &token_save_ptr);
 
                 int j = strlen(token_str_comment);
                 while (strcmp(&token_str_comment[--j], " ")); // For removing trailing whitespace
