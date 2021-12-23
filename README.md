@@ -43,7 +43,7 @@ A build script for Unix-like systems will be added soon.
         - [ ] For
         - [ ] While
     - [ ] Conditionals
-        - [ ] If-Then-Else
+        - [x] If
     - [ ] Modularity
         - [ ] Functions
         - [ ] Libraries (requires functions)
