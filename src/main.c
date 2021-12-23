@@ -49,6 +49,8 @@ typedef enum {
 
     op_do,
     op_while,
+    op_if,
+    op_fi,
 
     op_dstack
 } Operations;
@@ -305,6 +307,12 @@ void classifyTokens(Token *Program, int token_count, int flag_debug){
         } else if (!strcmp(Program[i].T_str, "while")) {
             Program[i].T_Type = TT_op;
             Program[i].OpType = op_while;
+        } else if (!strcmp(Program[i].T_str, "if")) {
+            Program[i].T_Type = TT_op;
+            Program[i].OpType = op_if;
+        } else if (!strcmp(Program[i].T_str, "fi")) {
+            Program[i].T_Type = TT_op;
+            Program[i].OpType = op_fi;
         } else if (!strcmp(Program[i].T_str, "dstack")) {
             Program[i].T_Type = TT_op;
             Program[i].OpType = op_dstack;
@@ -357,6 +365,7 @@ void interpretProgram(Token *Program, int token_count, int flag_debug) {
             int a, b, c, d;
             int l, s;
             int jump_valid;
+            int if_level;
             case op_null:
                 break;
             case op_add:
@@ -567,7 +576,27 @@ void interpretProgram(Token *Program, int token_count, int flag_debug) {
                     runtime_anchor_stack_height--;
                     break;
                 }
-
+                
+            case op_if:
+                if (stack_height < 1) {
+                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
+                }
+                if_level = 1;
+                s = program_index + 1;
+                while (if_level > 0) {
+                    if (Program[s].OpType == op_if) if_level++;
+                    else if (Program[s].OpType == op_fi) if_level--;
+                    s++;
+                }
+                a = Stack[--stack_height];
+                if (!a) {
+                    program_index = s - 1;
+                }
+                break;
+                
+            case op_fi:
+                break;            
+            
             case op_dstack:
                 printf("=== start dstack ===\n -> called at loc: %d\n -> current state (%d): [", program_index, stack_height);
                 for (int j = 0; j < stack_height; j++){
@@ -609,7 +638,7 @@ void helpMessage() {
     printf("required arguments:\n");
     printf("  -r <file>       run program from file\n");
     printf("\noptional arguments:\n");
-    printf("  -d, --debug     run program in interpreter debugging mode (show parsing stages)\n");
+    printf("  -d, --debug     run program in interpreter debugging mode\n");
     printf("  -h, --help      display this help message and exit\n");
 }
 

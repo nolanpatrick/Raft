@@ -1,0 +1,14 @@
+{ Conditional evaluation program }
+" Contitionals evaluation program " sprint cr
+
+1 if
+" loop said yes " sprint cr
+" this is cool " sprint cr
+fi
+
+0 if
+" loop said no " sprint cr
+" this sucks " sprint cr
+fi
+
+dstack cr
