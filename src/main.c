@@ -39,7 +39,7 @@ typedef enum {
 
     op_ipush,
     op_spush,
-    op_iprint
+    op_iprint,
     op_sprint,
 
     op_cr,
