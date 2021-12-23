@@ -6,9 +6,11 @@ The nature of this project is inspired by Alexey Kutepov (Tsoding)'s [Porth](htt
 
 ## Compiling the Interpreter
 
-The build script for Windows, ```build-win64.cmd```, is set up for use with a MINGW-w64 GCC installation (you may need to update the executable path to reflect your specific system). As the compilation does not require any special flags, options, or features, you can build it with any C compiler.
+At this time, there are build-scripts for both Linux and Windows. The Linux script should be relatively universal and shouldn't need modification to run on most systems. 
+On the other hand, the Windows build-script may require modification. By default, it is configured for GCC on Windows using MINGW-w64. Your specific path/version/compiler may vary,
+so double check the script if it doesn't seem to be compiling.
 
-A build script for Unix-like systems will be added soon.
+The compiled executable (`raft` or `raft.exe`) will be placed in the `./build/` directory.
 
 ## Project Milestones
 
