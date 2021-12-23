@@ -44,6 +44,7 @@ A build script for Unix-like systems will be added soon.
         - [ ] While
     - [ ] Conditionals
         - [x] If
+        - [ ] Then-Else branching (requires if)
     - [ ] Modularity
         - [ ] Functions
         - [ ] Libraries (requires functions)
