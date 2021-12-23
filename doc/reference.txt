@@ -38,7 +38,7 @@ rot  : Move third item to top of stack
 drop : Pop top item from stack
 
 ** Comments **
-{ <text> } : Denote comment. Nothing between curly-braces will be executed.
+( <text> ) : Denote comment. Nothing between parentheses will be executed.
 
 ** Program Structure **
 goto      : Go to anchor point indicated by int at top of stack (i.e. 3 goto). Allows for both progressive and regressive jumping.
@@ -47,6 +47,10 @@ goto      : Go to anchor point indicated by int at top of stack (i.e. 3 goto). A
 ** Loops **
 while : Do-wwhile loop eval statement
 do    : Indicates beginning of do-while loop.
+
+** Conditional **
+if : Denotes beginning of conditional branch
+fi : Denotes end of conditional branch
 
 ** Debugging **
 dstack : Show location, number of elements on the stack, and a readout of the entire stack
