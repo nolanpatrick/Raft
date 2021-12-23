@@ -1,3 +1,4 @@
+build/raft
 *.exe
 *.a
 .DS_Store
