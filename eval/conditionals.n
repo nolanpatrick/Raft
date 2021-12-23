@@ -1,4 +1,4 @@
-{ Conditional evaluation program }
+( Conditionals evaluation program )
 " Contitionals evaluation program " sprint cr
 
 1 if

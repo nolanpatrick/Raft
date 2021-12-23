@@ -1,11 +1,11 @@
-{ boolean testing program }
+( boolean testing program )
 
-" gt 1, 2 : " sprint 1 2 < iprint cr dstack
-" lt 1, 2 : " sprint 1 2 > iprint cr dstack
-" eq 1, 1 : " sprint 1 1 eq iprint cr dstack
+" gt 1, 2 : " sprint 1 2 < nbsp iprint cr dstack cr
+" lt 1, 2 : " sprint 1 2 > nbsp iprint cr dstack cr
+" eq 1, 1 : " sprint 1 1 eq nbsp iprint cr dstack cr
 
-" and 1, 0 : " sprint 1 0 and iprint cr dstack
-nbsp " or 1, 0 : " sprint 1 0 or iprint cr dstack
+" and 1, 0 : " sprint 1 0 and nbsp iprint cr dstack cr
+nbsp " or 1, 0 : " sprint 1 0 or nbsp iprint cr dstack cr
 
-" and 1, 1 : " sprint 1 1 and iprint cr dstack
-nbsp " or 1, 1 : " sprint 1 1 or iprint cr dstack
+" and 1, 1 : " sprint 1 1 and nbsp iprint cr dstack cr
+nbsp " or 1, 1 : " sprint 1 1 or nbsp iprint cr dstack cr
