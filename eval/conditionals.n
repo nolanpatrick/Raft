@@ -1,5 +1,5 @@
 ( Conditionals evaluation program )
-" Contitionals evaluation program " sprint cr
+" Conditionals evaluation program " sprint cr
 
 1 if
 " loop said yes " sprint cr
