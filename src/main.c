@@ -11,8 +11,8 @@ char global_filepath[1024];
 
 typedef enum { // Types of tokens allowed in program
     TT_null,
-    TT_comment_content,
-    TT_str_content,
+    TT_comment,
+    TT_str_literal,
     TT_anchor,
     TT_int,
     TT_op 
@@ -168,7 +168,7 @@ void parseTokens(char *file_buffer, int flag_debug){
                 while (strcmp(&token_str_comment[--j], " ")); // For removing trailing whitespace
                 token_str_comment[j] = '\0';
 
-                NewToken.T_Type = TT_comment_content;
+                NewToken.T_Type = TT_comment;
                 NewToken.OpType = op_null;
 
                 NewToken.T_str = calloc(strlen(token_str_comment), sizeof(char));
@@ -181,7 +181,7 @@ void parseTokens(char *file_buffer, int flag_debug){
                 while (strcmp(&token_str_content[--j], " ")); // For removing trailing whitespace
                 token_str_content[j] = '\0';
 
-                NewToken.T_Type = TT_str_content;
+                NewToken.T_Type = TT_str_literal;
                 NewToken.OpType = op_spush;
 
                 NewToken.T_str = calloc(strlen(token_str_content), sizeof(char));
@@ -264,7 +264,7 @@ void classifyTokens(Token *Program, int token_count, int flag_debug){
         } else if (!strcmp(Program[i].T_str, "drop")) {
             Program[i].T_Type = TT_op;
             Program[i].OpType = op_drop;
-        } else if (strIsNumeric(Program[i].T_str) && Program[i].T_Type != TT_comment_content && Program[i].T_Type != TT_str_content && Program[i].T_Type != TT_anchor) {
+        } else if (strIsNumeric(Program[i].T_str) && Program[i].T_Type != TT_comment && Program[i].T_Type != TT_str_literal && Program[i].T_Type != TT_anchor) {
             Program[i].T_Type = TT_int;
             Program[i].OpType = op_ipush;
             Program[i].T_int = strtol(Program[i].T_str, NULL, 10);
@@ -316,7 +316,7 @@ void classifyTokens(Token *Program, int token_count, int flag_debug){
         } else if (!strcmp(Program[i].T_str, "dstack")) {
             Program[i].T_Type = TT_op;
             Program[i].OpType = op_dstack;
-        } else if (Program[i].T_Type != TT_comment_content && Program[i].T_Type != TT_str_content && Program[i].T_Type != TT_anchor) {
+        } else if (Program[i].T_Type != TT_comment && Program[i].T_Type != TT_str_literal && Program[i].T_Type != TT_anchor) {
             throwError(global_filepath, Program[i].line, Program[i].loc, "Unknown keyword", Program[i].T_str);
         }
     }
@@ -324,9 +324,9 @@ void classifyTokens(Token *Program, int token_count, int flag_debug){
 
     if (flag_debug) {
         for (int i = 0; i < token_count; i++){
-        if (Program[i].T_Type == TT_str_content)
+        if (Program[i].T_Type == TT_str_literal)
             printf("STR, '%s': %d\n", Program[i].T_str, Program[i].T_Type);
-        else if (Program[i].T_Type == TT_comment_content)
+        else if (Program[i].T_Type == TT_comment)
             printf("COM, '%s': %d\n", Program[i].T_str, Program[i].T_Type);
         else if (Program[i].T_Type == TT_int)
             printf("INT, '%d': %d\n", Program[i].T_int, Program[i].T_Type);
@@ -598,6 +598,9 @@ void interpretProgram(Token *Program, int token_count, int flag_debug) {
                 break;            
             
             case op_dstack:
+                if (!flag_debug) {
+                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "Stack debug not allowed outside of debug mode", Program[program_index].T_str);
+                }
                 printf("=== start dstack ===\n -> called at loc: %d\n -> current state (%d): [", program_index, stack_height);
                 for (int j = 0; j < stack_height; j++){
                     printf(" %d ", Stack[j]);
