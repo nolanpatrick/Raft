@@ -1,0 +1,13 @@
+( Functions evaluation program )
+define function_a
+    " exec function_a " sprint cr
+    1 +    
+enddef
+
+" Functions evaluation program " sprint cr
+
+1
+function_a
+iprint cr
+
+" End eval " sprint cr
