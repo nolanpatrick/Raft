@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "typechecking.c"
+#include "lib/token.c"
+#include "lib/string_tests.c"
 
 #define FILE_BUF_MAX 640000 // 640 KB
 #define STACK_MAX 10240
@@ -367,6 +368,7 @@ void interpretProgram(Token *Program, int token_count, int flag_debug) {
             int jump_valid;
             int if_level;
             case op_null:
+                //printf("[internal] found null token\n");
                 break;
             case op_add:
                 if (stack_height < 2) {
