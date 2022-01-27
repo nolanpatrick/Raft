@@ -1,3 +1,6 @@
 [submodule "src/rll"]
 	path = src/rll
 	url = https://gitlab.com/nolanpatrick/rll
+[submodule "src/twine"]
+	path = src/twine
+	url = https://gitlab.com/nolanpatrick/twine

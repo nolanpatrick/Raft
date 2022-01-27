@@ -1,9 +1,14 @@
-{ Loop evaluation program }
+( Loop evaluation program )
 
-{ do-while loop }
+( do-while loop )
+
+
+
+
+
 5 do
     1 +
     " test " sprint cr
 dup 10 < while
 
-iprint
+iprint cr
