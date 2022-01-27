@@ -2,7 +2,7 @@
 
 This project originally started as an attempt to build a basic Forth interpreter in C as a programming exercise. However, it very quickly began evolving into its own distinct language. As it is in the very early stages of active development, many features may be broken or partially-implemented. As such, it is not advisable to rely on functionality until things have become more stable.
 
-The nature of this project is inspired by Alexey Kutepov (Tsoding)'s [Porth](https://gitlab.com/tsoding/porth) language.
+Parts of this project take inspiration from Alexey Kutepov (Tsoding)'s [Porth](https://gitlab.com/tsoding/porth) language.
 
 ## Compiling the Interpreter
 
@@ -73,6 +73,7 @@ The compiled executable (`raft` or `raft.exe`) will be placed in the `./build/` 
     - [ ] Error-checking
         - [x] Unknown keyword detection
         - [ ] Typechecking (in progress)
+    - [ ] Forth-compatible mode
 
 More may be added in the future as I come up with features I would like to implement. Feature suggestions may be submitted to this project as issues. When submitting a feature request, please include the tag [FEATURE] at the beginning of the subject line.
 
