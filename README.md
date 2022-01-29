@@ -1,5 +1,7 @@
 # Raft
 
+## Prototype stage has ended. Project is now officially underway!
+
 This project originally started as an attempt to build a basic Forth interpreter in C as a programming exercise. However, it very quickly began evolving into its own distinct language. As it is in the very early stages of active development, many features may be broken or partially-implemented. As such, it is not advisable to rely on functionality until things have become more stable.
 
 Parts of this project take inspiration from Alexey Kutepov (Tsoding)'s [Porth](https://gitlab.com/tsoding/porth) language.
@@ -12,7 +14,7 @@ so double check the script if it doesn't seem to be compiling.
 
 The compiled executable (`raft` or `raft.exe`) will be placed in the `./build/` directory.
 
-## Project Milestones
+## Project Milestones (prototype version)
 
 - [ ] Language Features
     - [x] Types
