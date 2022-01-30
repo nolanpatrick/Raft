@@ -9,7 +9,7 @@
 #define FILE_BUF_MAX 640000 // 640 KB
 #define STACK_MAX 10240
 
-char *version_string = "0.4.1";
+char *version_string = "0.5.0";
 char global_filepath[1024];
 
 typedef struct { // Program token
@@ -17,24 +17,72 @@ typedef struct { // Program token
     char *T_str;
     int line;
     int loc;
+    Operations op;
 } Token;
 
-const char * reserved_keywords[24] = {
-    "+", "-", "*", "/", // Arithmetic
-    ">", "<", "==", 
-    "and", "or",
-    "swap", "dup", "over", "rot", "drop",
-    "iprint", "sprint",
-    "cr", "nbsp", "goto", "do", "while",
-    "if", "fi",
-    "dstack"
+typedef struct {
+    Operations op;
+    char * word;
+} keyword;
+
+const keyword reserved[] = {
+    {op_null,      "null"},
+    {op_func,      "func"},
+    // {op_func_decl, ""},
+    // Function declaration is declared during parsing stage 1
+    {op_func_start, ":"},
+    {op_return,    "end"},
+    {op_add,       "+"},
+    {op_subtract,  "-"},
+    {op_multiply,  "*"},
+    {op_divide,    "/"},
+    {op_gt,        ">"},
+    {op_lt,        "<"},
+    {op_eq,        "="},
+    {op_and,       "and"},
+    {op_or,        "or"},
+    {op_swap,      "swap"},
+    {op_dup,       "dup"},
+    {op_over,      "over"},
+    {op_rot,       "rot"},
+    {op_drop,      "drop"},
+    // {op_ipush,     ""},
+    // {op_spush,     ""},
+    // Push declared during parsing stage 1
+    {op_iprint,    "iprint"},
+    {op_sprint,    "sprint"},
+    {op_cr,        "cr"},
+    {op_nbsp,      "nbsp"},
+    // {op_anchor,    ":"},
+    // {op_goto,      "goto"},
+    // Goto & Anchor instructions are deprecated as of v0.5.0, and are left
+    // here for completeness only.
+    {op_do,        "do"},
+    {op_while,     "while"},
+    {op_if,        "if"},
+    {op_fi,        "fi"},
+    {op_dstack,    "dstack"},
 };
+
+Operations get_op(char * kw) {
+    // This idea is borrowed from StackOverflow user 'plinth'
+
+    const int num_keywords = sizeof(reserved) / sizeof(keyword);
+    for (int i = 0; i < num_keywords; i++) {
+        if (!strcmp(kw, reserved[i].word)) {
+            return(reserved[i].op);
+        }
+    }
+    return(op_null);
+}
 
 // ===== Function signatures =====
 
 int main(int argc, char *argv[]);
 
 void parseTokens(char *file_buffer, int flag_debug);
+
+void parse_file(char * file_buffer, int flag_buffer);
 
 void build_program(Token *Program, int token_count, int flag_debug);
 
@@ -54,6 +102,7 @@ int main(int argc, char *argv[]) {
     if (argc == 1) helpMessage();
 
     for (int i = 0; i < argc; i++) {
+        // TODO: Restructure argv parsing to be more reliable and consistent
         if (!strcmp(argv[i], "-r") && argv[i+1] == NULL) {
             helpMessage();
             printf("\nError: please provide a path to the input file.\n");
@@ -90,82 +139,107 @@ int main(int argc, char *argv[]) {
 
             fclose(fp);
 
-            parseTokens(file_buffer, flag_debug);
+            parse_file(file_buffer, flag_debug);
         }
     }
     return 0;
 }
 
-void parseTokens(char *file_buffer, int flag_debug){
-    if (flag_debug) printf("===== Starting Tokenization Stage =====\n");
+void parse_file(char * file_buffer, int flag_debug) {
+    if (flag_debug) printf(" *** Tokenization stage ***\n");
 
-    Token* Program = malloc(sizeof(Token)); // Program tokens
+    Token raw_program[1024];
 
     int len_file = strlen(file_buffer);
-    int token_count = 0;
 
+    int token_count = 0;
     int line_count = 0;
     int line_token_count = 0;
-
-    char *line_save_ptr, *token_save_ptr;
-    char *line_token_str = strtok_r(file_buffer, "\n", &line_save_ptr);
     
-    while (line_token_str) {
-        line_count++; // Line count starts at zero, most editors start at 1.
-        char *token_str = strtok_r(line_token_str, " ", &token_save_ptr);
+    char * line_save_ptr, * token_save_ptr;
 
-        while (token_str) {
-            Program = realloc(Program, sizeof(Token) * (token_count + 2));
+    char * line_token_string = strtok_r(file_buffer, "\n", &line_save_ptr);
 
-            Token NewToken;
-            NewToken.line = line_count;
-            NewToken.loc = line_token_count; // TODO: Fix token count around comments and strings
+    while(line_token_string) {
+        line_count++;
+        char * token_string = strtok_r(line_token_string, " ", &token_save_ptr);
 
-            if (!strcmp(token_str, "(")) { // Capture comments
-                char *token_str_comment = strtok_r(NULL, ")", &token_save_ptr);
+        while (token_string) {
+            Token new_token;
+            new_token.line = line_count;
+            new_token.loc = line_token_count;
 
-                int j = strlen(token_str_comment);
-                while (strcmp(&token_str_comment[--j], " ")); // For removing trailing whitespace
-                token_str_comment[j] = '\0';
+            if (!strcmp(token_string, "(")) { // Capture comment as a single token
+                char * token_string_comment = strtok_r(NULL, ")", &token_save_ptr);
+                
+                if (token_string_comment == NULL) {
+                    throwError(global_filepath, new_token.line, new_token.loc, "missing ')' or malformed comment", "(");
+                } else {
+                    // Found valid comment text
+                    int j = strlen(token_string_comment);
+                    while (strcmp(&token_string_comment[--j], " ")); // Remove trailing whitespace
+                    token_string_comment[j] = '\0';
 
-                NewToken.T_str = calloc(strlen(token_str_comment), sizeof(char));
-                strcpy(NewToken.T_str, token_str_comment);
+                    new_token.T_str = malloc(strlen(token_string_comment));
+                    strcpy(new_token.T_str, token_string_comment);
+                    new_token.op = op_comment;
+
+                    printf(" [x] Instruction: '%s', %d\n", token_string_comment, new_token.op);
+                }
             }
-            else if (!strcmp(token_str, "\"")) { // Capture strings
-                char *token_str_content = strtok_r(NULL, "\"", &token_save_ptr);
 
-                int j = strlen(token_str_content);
-                while (strcmp(&token_str_content[--j], " ")); // For removing trailing whitespace
-                token_str_content[j] = '\0';
+            else if (!strcmp(token_string, "\"")) { // Capture string literal as a single token
+                char * token_string_strlit = strtok_r(NULL, "\"", &token_save_ptr);
 
-                NewToken.T_str = calloc(strlen(token_str_content), sizeof(char));
-                strcpy(NewToken.T_str, token_str_content);
+                if (token_string_strlit == NULL) {
+                    throwError(global_filepath, new_token.line, new_token.loc, "missing '\"' or malformed string literal", "\"");
+                } else {
+                    // Found valid string text
+                    int j = strlen(token_string_strlit);
+                    while (strcmp(&token_string_strlit[--j], " ")); // Remove trailing whitespace
+                    token_string_strlit[j] = '\0';
+
+                    new_token.T_str = malloc(strlen(token_string_strlit));
+                    strcpy(new_token.T_str, token_string_strlit);
+                    new_token.op = op_spush;
+
+                    printf(" [x] Instruction: '%s', %d\n", token_string_strlit, new_token.op);
+                }
             }
+
             else {
-                NewToken.T_str = calloc(strlen(token_str), sizeof(char));
-                memcpy(NewToken.T_str, token_str, strlen(token_str));
+                new_token.T_str = malloc(strlen(token_string));
+                strcpy(new_token.T_str, token_string);
+
+                new_token.op = get_op(token_string);
+
+                if (new_token.op == op_null) {
+                    if (strIsNumeric(token_string)) {
+                        new_token.op = op_ipush;
+                    } else if (raw_program[token_count].op == op_func) {
+                        new_token.op = op_func_decl;
+                    } else {
+                        printf(" [ ] Unknown token: '%s'\n", token_string);
+                    }
+                }
+
+                printf(" [x] Instruction: '%s', %d\n", token_string, new_token.op);
             }
 
-            if (flag_debug) {
-                printf(" - %d, %d:Token string: [%s]\n", token_count, NewToken.line, NewToken.T_str);
-            }
+            raw_program[token_count] = new_token;
 
-            Program[token_count] = NewToken;
-            token_str = strtok_r(NULL, " ", &token_save_ptr);
+            token_string = strtok_r(NULL, " ", &token_save_ptr);
 
-            token_count++;
+            //line_count++;
             line_token_count++;
+            token_count++;
         }
 
-        line_token_str = strtok_r(NULL, "\n", &line_save_ptr);
+        line_token_string = strtok_r(NULL, "\n", &line_save_ptr);
+
         line_token_count = 0;
     }
-    if (token_count == 0) {
-        printf("%s:0:0: Error: tokenization failed or file empty", global_filepath);
-        exit(1);
-    } else {
-        build_program(Program, token_count, flag_debug);
-    }
+    build_program(raw_program, token_count, flag_debug);
 }
 
 void build_program(Token *Program, int token_count, int flag_debug){
@@ -176,16 +250,41 @@ void build_program(Token *Program, int token_count, int flag_debug){
 
     struct _FuncNode MainProgram = FuncInitialize();
 
-    printf("test: %p\n", MainProgram.func);
+    for (int i = 0; i < token_count - 1; i++) {
+        printf("found token %s\n", Program[i].T_str);
+        if (Program[i].op == op_func) {
+            struct _FuncNode * function;
+            function = FuncPush(&MainProgram, Program[i].T_str);
 
+            int k = i + 1;
+
+            while (Program[k].op != op_return) {
+                if (Program[k].op == op_ipush) {
+                    OpPushInt(function, Program[k].op, strtol(Program[k].T_str, NULL, 10));
+                }
+                else {
+                    OpPushStr(function, Program[k].op, Program[k].T_str);
+                }
+                printf("Adding token '%s' of type %d to function '%s'\n", Program[k].T_str, Program[k].op, Program[i + 1].T_str);
+                k++;
+            }
+        }
+    }
+
+    FuncPrint(&MainProgram);
+
+
+
+    //printf("test: %p\n", MainProgram.func);
+/*
     for (int i = 0; i < token_count; i++) {
         if (!strcmp(Program[i].T_str, "func")) {
             printf("FUNCTION: %s AT: %d\n", Program[i+1].T_str, i);
             for (int j = 0; j < 24; j++) {
-                if (!strcmp(Program[i+1].T_str, reserved_keywords[j])) {
-                    printf("Error: That's a reserved keyword!\n");
-                    exit(1);
-                }
+                //if (!strcmp(Program[i+1].T_str, reserved_keywords[j])) {
+                //    printf("Error: That's a reserved keyword!\n");
+                //    exit(1);
+                //}
             }
             struct _FuncNode * Function;
             Function = FuncPush(&MainProgram, Program[i+1].T_str);
@@ -195,11 +294,13 @@ void build_program(Token *Program, int token_count, int flag_debug){
 
                     OpPush(Function, op_null, strtol(Program[k].T_str, NULL, 10));
                 }
+                printf("Keyword: '%s', Operation: '%d'\n", Program[k].T_str, get_op(Program[k].T_str));
                 k++;
             }
         }
     }
     FuncPrint(&MainProgram);
+    */
 }
 /*
 void interpretProgram(Token *Program, int token_count, int flag_debug) {
