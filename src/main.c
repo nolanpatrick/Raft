@@ -7,12 +7,13 @@
 #include "lib/string_tests.c"
 
 #define FILE_BUF_MAX 640000 // 640 KB
-#define STACK_MAX 10240
+//#define STACK_MAX 10240
 
 char *version_string = "0.5.0";
 char global_filepath[1024];
 
-typedef struct { // Program token
+typedef struct // Program token
+{
     int   T_int;
     char *T_str;
     int line;
@@ -20,7 +21,8 @@ typedef struct { // Program token
     Operations op;
 } Token;
 
-typedef struct {
+typedef struct
+{
     Operations op;
     char * word;
 } keyword;
@@ -272,7 +274,7 @@ void parse_file(char * file_buffer, int flag_debug)
 
 void build_program(Token *Program, int token_count, int flag_debug)
 {
-    if (flag_debug) printf("\n===== Starting Classification Stage =====\n");]
+    if (flag_debug) printf("\n===== Starting Classification Stage =====\n");
 
     for (int i = 0; i < token_count; i++)
     {
