@@ -25,7 +25,8 @@ typedef struct {
     char * word;
 } keyword;
 
-const keyword reserved[] = {
+const keyword reserved[] = 
+{
     {op_null,      "null"},
     {op_func,      "func"},
     // {op_func_decl, ""},
@@ -64,12 +65,15 @@ const keyword reserved[] = {
     {op_dstack,    "dstack"},
 };
 
-Operations get_op(char * kw) {
+Operations get_op(char * kw)
+{
     // This idea is borrowed from StackOverflow user 'plinth'
 
     const int num_keywords = sizeof(reserved) / sizeof(keyword);
-    for (int i = 0; i < num_keywords; i++) {
-        if (!strcmp(kw, reserved[i].word)) {
+    for (int i = 0; i < num_keywords; i++)
+    {
+        if (!strcmp(kw, reserved[i].word))
+        {
             return(reserved[i].op);
         }
     }
@@ -94,44 +98,53 @@ void helpMessage();
 
 // ======================================================================================
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
 
     int flag_debug = 0;    // Show parsing stages and debug info if enabled
     int flag_run = 0;      // Whether or not to begin parsing and execution
 
     if (argc == 1) helpMessage();
 
-    for (int i = 0; i < argc; i++) {
+    for (int i = 0; i < argc; i++)
+    {
         // TODO: Restructure argv parsing to be more reliable and consistent
-        if (!strcmp(argv[i], "-r") && argv[i+1] == NULL) {
+        if (!strcmp(argv[i], "-r") && argv[i+1] == NULL)
+        {
             helpMessage();
             printf("\nError: please provide a path to the input file.\n");
             exit(1);
         }
-        if (!strcmp(argv[i], "-r") && argv[i+1] != NULL) {
+        if (!strcmp(argv[i], "-r") && argv[i+1] != NULL)
+        {
             strcpy(global_filepath, argv[i+1]);
             flag_run = 1;
         }
-        if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")){
+        if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help"))
+        {
             helpMessage();
             exit(0);
         }
-        if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "--debug")) {
+        if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "--debug"))
+        {
             printf("[WARN] Enabled debugging mode\n");
             flag_debug = 1;
         }
 
     }
-    if (flag_run) {
-
+    if (flag_run)
+    {
         if (flag_debug) printf("[INFO] Reading %s\n", global_filepath);
         FILE *fp = fopen(global_filepath, "r");
 
-        if (fp == NULL) {
+        if (fp == NULL)
+        {
             printf("Error: could not read file: \'%s\'", global_filepath);
-        } else {
+        }
+        else
+        {
             // Read file
-            char *file_buffer = (char *) malloc (FILE_BUF_MAX);
+            char file_buffer[FILE_BUF_MAX];
 
             int file_index = 0;
             while (fscanf(fp, "%c", &file_buffer[file_index]) != EOF) file_index++;
@@ -145,7 +158,8 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-void parse_file(char * file_buffer, int flag_debug) {
+void parse_file(char * file_buffer, int flag_debug)
+{
     if (flag_debug) printf(" *** Tokenization stage ***\n");
 
     Token raw_program[1024];
@@ -160,21 +174,26 @@ void parse_file(char * file_buffer, int flag_debug) {
 
     char * line_token_string = strtok_r(file_buffer, "\n", &line_save_ptr);
 
-    while(line_token_string) {
+    while(line_token_string)
+    {
         line_count++;
         char * token_string = strtok_r(line_token_string, " ", &token_save_ptr);
 
-        while (token_string) {
+        while (token_string)
+        {
             Token new_token;
             new_token.line = line_count;
             new_token.loc = line_token_count;
 
-            if (!strcmp(token_string, "(")) { // Capture comment as a single token
-                char * token_string_comment = strtok_r(NULL, ")", &token_save_ptr);
-                
-                if (token_string_comment == NULL) {
+            if (!strcmp(token_string, "(")) // Capture comment as a single token
+            {
+                if (strstr(token_save_ptr, ")") == NULL)
+                {
                     throwError(global_filepath, new_token.line, new_token.loc, "missing ')' or malformed comment", "(");
-                } else {
+                } 
+                else
+                {
+                    char * token_string_comment = strtok_r(NULL, ")", &token_save_ptr);
                     // Found valid comment text
                     int j = strlen(token_string_comment);
                     while (strcmp(&token_string_comment[--j], " ")); // Remove trailing whitespace
@@ -188,12 +207,15 @@ void parse_file(char * file_buffer, int flag_debug) {
                 }
             }
 
-            else if (!strcmp(token_string, "\"")) { // Capture string literal as a single token
-                char * token_string_strlit = strtok_r(NULL, "\"", &token_save_ptr);
-
-                if (token_string_strlit == NULL) {
-                    throwError(global_filepath, new_token.line, new_token.loc, "missing '\"' or malformed string literal", "\"");
-                } else {
+            else if (!strcmp(token_string, "\"")) // Capture string literal as a single token
+            {
+                if (strstr(token_save_ptr, "\"") == NULL)
+                {
+                    throwError(global_filepath, new_token.line, new_token.loc, "missing quote or malformed string literal", "\"");
+                }
+                else
+                {
+                    char * token_string_strlit = strtok_r(NULL, "\"", &token_save_ptr);
                     // Found valid string text
                     int j = strlen(token_string_strlit);
                     while (strcmp(&token_string_strlit[--j], " ")); // Remove trailing whitespace
@@ -207,18 +229,24 @@ void parse_file(char * file_buffer, int flag_debug) {
                 }
             }
 
-            else {
+            else
+            {
                 new_token.T_str = malloc(strlen(token_string));
                 strcpy(new_token.T_str, token_string);
 
                 new_token.op = get_op(token_string);
 
-                if (new_token.op == op_null) {
-                    if (strIsNumeric(token_string)) {
+                if (new_token.op == op_null)
+                {
+                    if (strIsNumeric(token_string))
+                    {
                         new_token.op = op_ipush;
-                    } else if (raw_program[token_count].op == op_func) {
+                    } else if (raw_program[token_count].op == op_func)
+                    {
                         new_token.op = op_func_decl;
-                    } else {
+                    }
+                    else
+                    {
                         printf(" [ ] Unknown token: '%s'\n", token_string);
                     }
                 }
@@ -242,26 +270,34 @@ void parse_file(char * file_buffer, int flag_debug) {
     build_program(raw_program, token_count, flag_debug);
 }
 
-void build_program(Token *Program, int token_count, int flag_debug){
-    if (flag_debug) printf("\n===== Starting Classification Stage =====\n");
-    for (int i = 0; i < token_count; i++) {
+void build_program(Token *Program, int token_count, int flag_debug)
+{
+    if (flag_debug) printf("\n===== Starting Classification Stage =====\n");]
+
+    for (int i = 0; i < token_count; i++)
+    {
         printf("Token: '%s'\n", Program[i].T_str);
     }
 
     struct _FuncNode MainProgram = FuncInitialize();
 
-    for (int i = 0; i < token_count - 1; i++) {
-        if (Program[i].op == op_func) {
+    for (int i = 0; i < token_count - 1; i++)
+    {
+        if (Program[i].op == op_func)
+        {
             struct _FuncNode * function;
             function = FuncPush(&MainProgram, Program[i+1].T_str);
 
             int k = i + 2;
 
-            while (Program[k].op != op_return) {
-                if (Program[k].op == op_ipush) {
+            while (Program[k].op != op_return)
+            {
+                if (Program[k].op == op_ipush)
+                {
                     OpPushInt(function, Program[k].op, strtol(Program[k].T_str, NULL, 10));
                 }
-                else {
+                else
+                {
                     OpPushStr(function, Program[k].op, Program[k].T_str);
                 }
                 printf("Adding token '%s' of type %d to function '%s'\n", Program[k].T_str, Program[k].op, Program[i + 1].T_str);
@@ -564,12 +600,14 @@ void interpretProgram(Token *Program, int token_count, int flag_debug) {
 }
 */
 
-void throwError(const char *filename, int line, int token, char *message, char *operator) {
+void throwError(const char *filename, int line, int token, char *message, char *operator)
+{
     printf("\n%s:%d:%d Error: %s: '%s'\n", filename, line, token, message, operator);
     exit(1);
 }
 
-void helpMessage() {
+void helpMessage()
+{
     printf("Raft interpreter %s\n", version_string);
     printf("usage: raft [OPTIONS] -r <path_to_program>\n\n");
     printf("required arguments:\n");
