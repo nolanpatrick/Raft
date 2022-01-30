@@ -1,13 +1,12 @@
 ( Functions evaluation program )
-define function_a
-    " exec function_a " sprint cr
-    1 +    
-enddef
 
-" Functions evaluation program " sprint cr
+func test
+    ( comment text in test function )
+    1 2 + iprint
+end
 
-1
-function_a
-iprint cr
-
-" End eval " sprint cr
+func main
+    " string beans " sprint cr
+    6 7 + iprint
+    test
+end

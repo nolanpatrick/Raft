@@ -251,12 +251,11 @@ void build_program(Token *Program, int token_count, int flag_debug){
     struct _FuncNode MainProgram = FuncInitialize();
 
     for (int i = 0; i < token_count - 1; i++) {
-        printf("found token %s\n", Program[i].T_str);
         if (Program[i].op == op_func) {
             struct _FuncNode * function;
-            function = FuncPush(&MainProgram, Program[i].T_str);
+            function = FuncPush(&MainProgram, Program[i+1].T_str);
 
-            int k = i + 1;
+            int k = i + 2;
 
             while (Program[k].op != op_return) {
                 if (Program[k].op == op_ipush) {
@@ -268,39 +267,10 @@ void build_program(Token *Program, int token_count, int flag_debug){
                 printf("Adding token '%s' of type %d to function '%s'\n", Program[k].T_str, Program[k].op, Program[i + 1].T_str);
                 k++;
             }
+            i = k;
         }
     }
-
-    FuncPrint(&MainProgram);
-
-
-
-    //printf("test: %p\n", MainProgram.func);
-/*
-    for (int i = 0; i < token_count; i++) {
-        if (!strcmp(Program[i].T_str, "func")) {
-            printf("FUNCTION: %s AT: %d\n", Program[i+1].T_str, i);
-            for (int j = 0; j < 24; j++) {
-                //if (!strcmp(Program[i+1].T_str, reserved_keywords[j])) {
-                //    printf("Error: That's a reserved keyword!\n");
-                //    exit(1);
-                //}
-            }
-            struct _FuncNode * Function;
-            Function = FuncPush(&MainProgram, Program[i+1].T_str);
-            int k = i+1;
-            while (strcmp(Program[k].T_str, "end")) {
-                if (strIsNumeric(Program[k].T_str)) {
-
-                    OpPush(Function, op_null, strtol(Program[k].T_str, NULL, 10));
-                }
-                printf("Keyword: '%s', Operation: '%d'\n", Program[k].T_str, get_op(Program[k].T_str));
-                k++;
-            }
-        }
-    }
-    FuncPrint(&MainProgram);
-    */
+    MemMapPrint(&MainProgram);
 }
 /*
 void interpretProgram(Token *Program, int token_count, int flag_debug) {
