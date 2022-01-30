@@ -30,7 +30,7 @@ const keyword reserved[] = {
     {op_func,      "func"},
     // {op_func_decl, ""},
     // Function declaration is declared during parsing stage 1
-    {op_func_start, ":"},
+    {op_func_start, ":"}, // Currently unused
     {op_return,    "end"},
     {op_add,       "+"},
     {op_subtract,  "-"},
