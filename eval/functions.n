@@ -1,12 +1,15 @@
 ( Functions evaluation program )
 
+const ctest 1 end
+
 func test
     ( comment text in test function )
-    1 2 + iprint
+    1 2 + iprint cr
 end
 
 func main
-    " string beans " sprint cr
-    6 7 + iprint
+    s" string beans" sprint cr
+    6 7 + iprint cr
     test
+    s" end main" sprint
 end

@@ -2,9 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-//#include "rll/RLL.h"
-#include "rll/RLL_PTR.h"
-#include "lib/string_tests.c"
+#include "include/structure.c"
+#include "include/string_tests.c"
 
 #define FILE_BUF_MAX 640000 // 640 KB
 //#define STACK_MAX 10240
@@ -21,67 +20,6 @@ typedef struct // Program token
     Operations op;
 } Token;
 
-typedef struct
-{
-    Operations op;
-    char * word;
-} keyword;
-
-const keyword reserved[] = 
-{
-    {op_null,      "null"},
-    {op_func,      "func"},
-    // {op_func_decl, ""},
-    // Function declaration is declared during parsing stage 1
-    {op_func_start, ":"}, // Currently unused
-    {op_return,    "end"},
-    {op_add,       "+"},
-    {op_subtract,  "-"},
-    {op_multiply,  "*"},
-    {op_divide,    "/"},
-    {op_gt,        ">"},
-    {op_lt,        "<"},
-    {op_eq,        "="},
-    {op_and,       "and"},
-    {op_or,        "or"},
-    {op_swap,      "swap"},
-    {op_dup,       "dup"},
-    {op_over,      "over"},
-    {op_rot,       "rot"},
-    {op_drop,      "drop"},
-    // {op_ipush,     ""},
-    // {op_spush,     ""},
-    // Push declared during parsing stage 1
-    {op_iprint,    "iprint"},
-    {op_sprint,    "sprint"},
-    {op_cr,        "cr"},
-    {op_nbsp,      "nbsp"},
-    // {op_anchor,    ":"},
-    // {op_goto,      "goto"},
-    // Goto & Anchor instructions are deprecated as of v0.5.0, and are left
-    // here for completeness only.
-    {op_do,        "do"},
-    {op_while,     "while"},
-    {op_if,        "if"},
-    {op_fi,        "fi"},
-    {op_dstack,    "dstack"},
-};
-
-Operations get_op(char * kw)
-{
-    // This idea is borrowed from StackOverflow user 'plinth'
-
-    const int num_keywords = sizeof(reserved) / sizeof(keyword);
-    for (int i = 0; i < num_keywords; i++)
-    {
-        if (!strcmp(kw, reserved[i].word))
-        {
-            return(reserved[i].op);
-        }
-    }
-    return(op_null);
-}
-
 // ===== Function signatures =====
 
 int main(int argc, char *argv[]);
@@ -92,7 +30,7 @@ void parse_file(char * file_buffer, int flag_buffer);
 
 void build_program(Token *Program, int token_count, int flag_debug);
 
-void interpretProgram(Token *Program, int token_count, int flag_debug);
+void interpret_program(struct _FuncNode * p, int flag_debug);
 
 void throwError(const char *filename, int line, int token, char *message, char *operator);
 
@@ -196,20 +134,15 @@ void parse_file(char * file_buffer, int flag_debug)
                 else
                 {
                     char * token_string_comment = strtok_r(NULL, ")", &token_save_ptr);
-                    // Found valid comment text
-                    int j = strlen(token_string_comment);
-                    while (strcmp(&token_string_comment[--j], " ")); // Remove trailing whitespace
-                    token_string_comment[j] = '\0';
-
                     new_token.T_str = malloc(strlen(token_string_comment));
                     strcpy(new_token.T_str, token_string_comment);
                     new_token.op = op_comment;
 
-                    printf(" [x] Instruction: '%s', %d\n", token_string_comment, new_token.op);
+                    //printf(" [x] Instruction: '%s', %d\n", token_string_comment, new_token.op);
                 }
             }
 
-            else if (!strcmp(token_string, "\"")) // Capture string literal as a single token
+            else if (!strcmp(token_string, "s\"")) // Capture string literal as a single token
             {
                 if (strstr(token_save_ptr, "\"") == NULL)
                 {
@@ -218,16 +151,11 @@ void parse_file(char * file_buffer, int flag_debug)
                 else
                 {
                     char * token_string_strlit = strtok_r(NULL, "\"", &token_save_ptr);
-                    // Found valid string text
-                    int j = strlen(token_string_strlit);
-                    while (strcmp(&token_string_strlit[--j], " ")); // Remove trailing whitespace
-                    token_string_strlit[j] = '\0';
-
                     new_token.T_str = malloc(strlen(token_string_strlit));
                     strcpy(new_token.T_str, token_string_strlit);
                     new_token.op = op_spush;
 
-                    printf(" [x] Instruction: '%s', %d\n", token_string_strlit, new_token.op);
+                    //printf(" [x] Instruction: '%s', %d\n", token_string_strlit, new_token.op);
                 }
             }
 
@@ -243,17 +171,18 @@ void parse_file(char * file_buffer, int flag_debug)
                     if (strIsNumeric(token_string))
                     {
                         new_token.op = op_ipush;
-                    } else if (raw_program[token_count].op == op_func)
+                    } 
+                    else if (raw_program[token_count].op == op_func)
                     {
                         new_token.op = op_func_decl;
                     }
                     else
                     {
-                        printf(" [ ] Unknown token: '%s'\n", token_string);
+                        //printf(" [ ] Unknown token: '%s'\n", token_string);
                     }
                 }
 
-                printf(" [x] Instruction: '%s', %d\n", token_string, new_token.op);
+                //printf(" [x] Instruction: '%s', %d\n", token_string, new_token.op);
             }
 
             raw_program[token_count] = new_token;
@@ -276,11 +205,6 @@ void build_program(Token *Program, int token_count, int flag_debug)
 {
     if (flag_debug) printf("\n===== Starting Classification Stage =====\n");
 
-    for (int i = 0; i < token_count; i++)
-    {
-        printf("Token: '%s'\n", Program[i].T_str);
-    }
-
     struct _FuncNode MainProgram = FuncInitialize();
 
     for (int i = 0; i < token_count - 1; i++)
@@ -302,13 +226,429 @@ void build_program(Token *Program, int token_count, int flag_debug)
                 {
                     OpPushStr(function, Program[k].op, Program[k].T_str);
                 }
-                printf("Adding token '%s' of type %d to function '%s'\n", Program[k].T_str, Program[k].op, Program[i + 1].T_str);
                 k++;
             }
+            OpPush(function, op_return);
+            i = k;
+        }
+        else if (Program[i].op == op_const)
+        {
+            struct _FuncNode * function;
+            function = FuncPush(&MainProgram, Program[i+1].T_str);
+
+            int k = i + 2;
+
+            while (Program[k].op != op_return)
+            {
+                if (Program[k].op == op_ipush)
+                {
+                    OpPushInt(function, Program[k].op, strtol(Program[k].T_str, NULL, 10));
+                }
+                else
+                {
+                    OpPushStr(function, Program[k].op, Program[k].T_str);
+                }
+                k++;
+            }
+            OpPush(function, op_return);
             i = k;
         }
     }
-    MemMapPrint(&MainProgram);
+    if (flag_debug) MemMapPrint(&MainProgram);
+    interpret_program(&MainProgram, flag_debug);
+}
+
+void interpret_program(struct _FuncNode * p, int flag_debug)
+{
+    struct _RetNode MainRetStack = RetInitialize();
+
+    struct _FuncNode * ExecFunction;
+
+    struct _OpNode * ExecOp;
+
+    struct _Node MainStack = Initialize();
+
+    //RetPrint(&MainRetStack);
+
+    ExecFunction = p;
+    while (strcmp(ExecFunction->handle, "main"))
+    {
+        ExecFunction = ExecFunction->func;
+    }
+
+    if (strcmp(ExecFunction->handle, "main"))
+    {
+        fprintf(stderr, "Error: could not fund program entry point (main)\n");
+        exit(1);
+    }
+    else
+    {
+        if (flag_debug) printf("[debug] found entry point (main) at %p, function starts at %p\n", ExecFunction, ExecFunction->ptr);
+    }
+
+    ExecOp = ExecFunction->ptr;
+
+    while (ExecOp)
+    {
+        switch(ExecOp->op)
+        {
+            case op_null:
+            {
+                if (IsFunc(p, ExecOp->data_s))
+                {
+                    struct _FuncNode * next = GetFuncAddr(p, ExecOp->data_s);
+                    if (next != NULL)
+                    {
+                        ExecOp->op = op_func_call;
+                        RetPush(&MainRetStack, ExecOp->ptr);
+                        if (flag_debug) 
+                        {
+                            printf("\n[debug] jumping to function '%s' at %p\n", ExecOp->data_s, next);
+                            printf("\n[debug] return stack length %d\n", RetLength(&MainRetStack));
+                            RetPrint(&MainRetStack);
+                        }
+                        ExecOp = next->ptr;
+                    }
+                    break;
+                }
+                else
+                {
+                    fprintf(stderr, "Error: unknown keyword '%s'", ExecOp->data_s);
+                    exit(1);
+                    break;
+                }
+            }
+            case op_comment:
+            {
+                ExecOp = ExecOp->ptr;
+                break;
+            }
+            case op_return:
+            {
+                if (RetLength(&MainRetStack) < 1)
+                {
+                    //fprintf(stderr, "Error: return stack contents insufficient for continued execution");
+                    exit(1);
+                }
+                ExecOp = RetPop(&MainRetStack);
+                if (flag_debug) printf("\n[debug] return stack length %d\n", RetLength(&MainRetStack));
+                if (flag_debug) printf("\n[debug] returning to %p\n", ExecOp);
+                break;
+            }
+            case op_func:
+            {
+                fprintf(stderr, "Error: functions may not be declared within functions");
+                exit(1);
+                break;
+            }
+            case op_func_init:
+            {
+                if (flag_debug) printf("\n[debug] executing function at %p\n", ExecOp);
+                ExecOp = ExecOp->ptr;
+                break;
+            }
+            case op_add:
+            {
+                if (LinkLength(&MainStack) < 2)
+                {
+                    fprintf(stderr, "Error: stack contents insufficient for operation '+'");
+                    exit(1);
+                }
+                int a = LinkPop(&MainStack);
+                int b = LinkPop(&MainStack);
+                LinkPush(&MainStack, a + b);
+                ExecOp = ExecOp->ptr;
+                break;
+            }
+            case op_subtract:
+            {
+                if (LinkLength(&MainStack) < 2)
+                {
+                    fprintf(stderr, "Error: stack contents insufficient for operation '-'");
+                    exit(1);
+                }
+                int b = LinkPop(&MainStack);
+                int a = LinkPop(&MainStack);
+                LinkPush(&MainStack, a - b);
+                ExecOp = ExecOp->ptr;
+                break;
+            }
+            case op_multiply:
+            {
+                if (LinkLength(&MainStack) < 2)
+                {
+                    fprintf(stderr, "Error: stack contents insufficient for operation '*'");
+                    exit(1);
+                }
+                int b = LinkPop(&MainStack);
+                int a = LinkPop(&MainStack);
+                LinkPush(&MainStack, a * b);
+                ExecOp = ExecOp->ptr;
+                break;
+            }
+            case op_divide:
+            {
+                if (LinkLength(&MainStack) < 2)
+                {
+                    fprintf(stderr, "Error: stack contents insufficient for operation '/'");
+                    exit(1);
+                }
+                int b = LinkPop(&MainStack);
+                int a = LinkPop(&MainStack);
+                LinkPush(&MainStack, a / b);
+                LinkPush(&MainStack, a % b);
+                ExecOp = ExecOp->ptr;
+                break;
+            }
+            case op_gt:
+            {
+                if (LinkLength(&MainStack) < 2)
+                {
+                    fprintf(stderr, "Error: stack contents insufficient for operation '>'");
+                    exit(1);
+                }
+                int b = LinkPop(&MainStack);
+                int a = LinkPop(&MainStack);
+                LinkPush(&MainStack, a > b);
+                ExecOp = ExecOp->ptr;
+                break;
+            }
+            case op_lt:
+            {
+                if (LinkLength(&MainStack) < 2)
+                {
+                    fprintf(stderr, "Error: stack contents insufficient for operation '<'");
+                    exit(1);
+                }
+                int b = LinkPop(&MainStack);
+                int a = LinkPop(&MainStack);
+                LinkPush(&MainStack, a < b);
+                ExecOp = ExecOp->ptr;
+                break;
+            }
+            case op_eq:
+            {
+                if (LinkLength(&MainStack) < 2)
+                {
+                    fprintf(stderr, "Error: stack contents insufficient for operation '='");
+                    exit(1);
+                }
+                int b = LinkPop(&MainStack);
+                int a = LinkPop(&MainStack);
+                LinkPush(&MainStack, a == b);
+                ExecOp = ExecOp->ptr;
+                break;
+            }
+            case op_and:
+            {
+                if (LinkLength(&MainStack) < 2)
+                {
+                    fprintf(stderr, "Error: stack contents insufficient for operation 'and'");
+                    exit(1);
+                }
+                int b = LinkPop(&MainStack);
+                int a = LinkPop(&MainStack);
+                LinkPush(&MainStack, a && b);
+                ExecOp = ExecOp->ptr;
+                break;
+            }
+            case op_or:
+            {
+                if (LinkLength(&MainStack) < 2)
+                {
+                    fprintf(stderr, "Error: stack contents insufficient for operation 'or'");
+                    exit(1);
+                }
+                int b = LinkPop(&MainStack);
+                int a = LinkPop(&MainStack);
+                LinkPush(&MainStack, a || b);
+                ExecOp = ExecOp->ptr;
+                break;
+            }
+            case op_swap:
+            {
+                if (LinkLength(&MainStack) < 2)
+                {
+                    fprintf(stderr, "Error: stack contents insufficient for operation 'swap'");
+                    exit(1);
+                }
+                int b = LinkPop(&MainStack);
+                int a = LinkPop(&MainStack);
+                LinkPush(&MainStack, b);
+                LinkPush(&MainStack, a);
+                ExecOp = ExecOp->ptr;
+                break;
+            }
+            case op_dup:
+            {
+                if (LinkLength(&MainStack) < 1)
+                {
+                    fprintf(stderr, "Error: stack contents insufficient for operation 'dup'");
+                    exit(1);
+                }
+                int a = LinkPop(&MainStack);
+                LinkPush(&MainStack, a);
+                LinkPush(&MainStack, a);
+                ExecOp = ExecOp->ptr;
+                break;
+            }
+            case op_over:
+            {
+                if (LinkLength(&MainStack) < 2)
+                {
+                    fprintf(stderr, "Error: stack contents insufficient for operation 'over'");
+                    exit(1);
+                }
+                int b = LinkPop(&MainStack);
+                int a = LinkPop(&MainStack);
+                LinkPush(&MainStack, a);
+                LinkPush(&MainStack, b);
+                LinkPush(&MainStack, a);
+                ExecOp = ExecOp->ptr;
+                break;
+            }
+            case op_rot:
+            {
+                if (LinkLength(&MainStack) < 3)
+                {
+                    fprintf(stderr, "Error: stack contents insufficient for operation 'rot'");
+                    exit(1);
+                }
+                int c = LinkPop(&MainStack);
+                int b = LinkPop(&MainStack);
+                int a = LinkPop(&MainStack);
+                LinkPush(&MainStack, b);
+                LinkPush(&MainStack, c);
+                LinkPush(&MainStack, a);
+                ExecOp = ExecOp->ptr;
+                break;
+            }
+            case op_drop:
+            {
+                if (LinkLength(&MainStack) < 1)
+                {
+                    fprintf(stderr, "Error: stack contents insufficient for operation 'drop'");
+                    exit(1);
+                }
+                int a = LinkPop(&MainStack);
+                ExecOp = ExecOp->ptr;
+                break;
+            }
+            case op_ipush:
+            {
+                LinkPush(&MainStack, ExecOp->data_i);
+                ExecOp = ExecOp->ptr;
+                break;
+            }
+            case op_iprint:
+            {
+                if (LinkLength(&MainStack) < 1)
+                {
+                    fprintf(stderr, "Error: stack contents insufficient for operation 'iprint'");
+                    exit(1);
+                }
+                int a = LinkPop(&MainStack);
+                printf("%d", a);
+                ExecOp = ExecOp->ptr;
+                break;
+            }
+            case op_spush:
+            {
+                int a = strlen(ExecOp->data_s) - 1;
+                for (int i = a; i >= 0; i--)
+                {
+                    LinkPush(&MainStack, ExecOp->data_s[i]);
+                }
+                LinkPush(&MainStack, a + 1);
+                ExecOp = ExecOp->ptr;
+                break;
+            }
+            case op_sprint:
+            {
+                if (LinkLength(&MainStack) < 2)
+                {
+                    fprintf(stderr, "Error: stack contents insufficient for operation 'spush'");
+                    exit(1);
+                }
+                int a = LinkPop(&MainStack);
+                for (int i = 0; i < a; i++)
+                {
+                    printf("%c", LinkPop(&MainStack));
+                }
+                ExecOp = ExecOp->ptr;
+                break;
+            }
+            case op_cpush:
+            {
+                fprintf(stderr, "Error: character push is not implemented");
+                exit(1);
+                break;
+            }
+            case op_cprint:
+            {
+                fprintf(stderr, "Error: 'cprint' is not implemented");
+                exit(1);
+                break;
+            }
+            case op_cr:
+            {
+                printf("\n");
+                ExecOp = ExecOp->ptr;
+                break;
+            }
+            case op_nbsp:
+            {
+                printf(" ");
+                ExecOp = ExecOp->ptr;
+                break;
+            }
+            case op_anchor:
+            {
+                fprintf(stderr, "Error: anchors are no longer supported (this should be unreachable)");
+                exit(1);
+                break;
+            }
+            case op_goto:
+            {
+                fprintf(stderr, "Error: 'goto' is no longer supported");
+                exit(1);
+                break;
+            }
+            case op_do:
+            {
+                fprintf(stderr, "Error: loops are not yet implemented");
+                exit(1);
+                break;
+            }
+            case op_while:
+            {
+                fprintf(stderr, "Error: loops are not yet implemented");
+                exit(1);
+                break;
+            }
+            case op_if:
+            {
+                fprintf(stderr, "Error: conditionals are not yet implemented");
+                exit(1);
+                break;
+            }
+            case op_fi:
+            {
+                fprintf(stderr, "Error: conditionals are not yet implemented");
+                exit(1);
+                break;
+            }
+            case op_dstack:
+            {
+                struct _Node * curr = MainStack.ptr;
+                while (curr) {
+                    printf("%d ", curr->data);
+                }
+                ExecOp = ExecOp->ptr;
+                break;
+            }
+        }
+    }
 }
 /*
 void interpretProgram(Token *Program, int token_count, int flag_debug) {
