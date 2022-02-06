@@ -1,15 +1,25 @@
 ( Functions evaluation program )
+#internal debug_all end
 
-const ctest 1 end
+const test_const 123456789 9 / drop end ( should return 13717421 )
 
-func test
+func say_hello
+    ( you can print ascii as a string as well! )
+    33 100 108 114 111 87 32 111 108 108 101 72 ( string ascii )
+    12 ( string length ) 
+    sprint cr
+end
+
+func test_func
     ( comment text in test function )
     1 2 + iprint cr
 end
 
 func main
+    say_hello
     s" string beans" sprint cr
     6 7 + iprint cr
-    test
-    s" end main" sprint
+    test_func
+    test_const iprint nbsp s" <- value of test_const" sprint cr
+    s" end main" sprint cr
 end

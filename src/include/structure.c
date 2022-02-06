@@ -1,8 +1,16 @@
+#pragma once
+
 typedef enum 
 {
     op_null,
     op_comment,
     op_return,
+
+    // Delimiters (used in parsing stage 1 only)
+    op_comment_init,
+    op_comment_end,
+    op_string_init,
+    op_string_end,
 
     // Functions
     op_func,
@@ -14,6 +22,11 @@ typedef enum
     op_const,
     op_const_decl,
     op_const_call,
+
+    // Return Stack (for Forth compatibility)
+    op_ret_push,
+    op_ret_pop,
+    op_ret_fetch,
 
     // Arithmetic
     op_add,
@@ -39,17 +52,14 @@ typedef enum
     op_ipush,
     op_iprint,
 
-    // Strings
+    // Strings & Chars
     op_spush,
     op_sprint,
-    op_cpush,  // push char
-    op_cprint, // print char
+    op_cprint,
 
     // Misc.
     op_cr,
     op_nbsp,
-    op_anchor,
-    op_goto,
 
     // Loops
     op_do,
@@ -60,7 +70,12 @@ typedef enum
     op_fi,
 
     // Debugging
-    op_dstack
+    op_dstack,
+
+    // Internal flags
+    op_internal,
+    op_unhandled_warn,
+    op_unhandled_ignore
 } Operations;
 
 typedef struct
@@ -74,40 +89,98 @@ const keyword reserved[] =
     {op_null,       "__null"},
     {op_comment,    "__comment"},
     {op_return,     "end"},
+    {op_return,     ";"},  // Forth syntax
+
+    {op_comment_init, "("},
+    {op_comment_end,  ")"},
+    {op_string_init,  "s\""},
+    {op_string_end,   "\""},
+
     {op_func,       "func"},
+    {op_func,       ":"},  // Forth syntax
     {op_func_init,  "__func_init"},
     {op_func_call,  "__func_call"},
+
     {op_const,      "const"},
-    //{op_const_decl, ""},
     {op_const_call, "__const_call"},
+
+    {op_ret_push,   ">R"},
+    {op_ret_pop,    "R>"},
+    {op_ret_fetch,  "R@"},
+
     {op_add,        "+"},
     {op_subtract,   "-"},
     {op_multiply,   "*"},
     {op_divide,     "/"},
+
     {op_gt,         ">"},
     {op_lt,         "<"},
     {op_eq,         "="},
     {op_and,        "and"},
     {op_or,         "or"},
+
     {op_swap,       "swap"},
     {op_dup,        "dup"},
     {op_over,       "over"},
     {op_rot,        "rot"},
     {op_drop,       "drop"},
+    
     {op_ipush,      "__ipush"},
-    {op_spush,      "__spush"},
-    // {op_string,    "s\""},
-    // Push declared during parsing stage 1
     {op_iprint,     "iprint"},
+    {op_iprint,     "."},
+
+    {op_spush,      "__spush"},
     {op_sprint,     "sprint"},
+
+    {op_cprint,     "cprint"},
+    {op_cprint,     "emit"},  // Forth syntax
+
     {op_cr,         "cr"},
     {op_nbsp,       "nbsp"},
+
     {op_do,         "do"},
     {op_while,      "while"},
+
     {op_if,         "if"},
     {op_fi,         "fi"},
+
     {op_dstack,     "dstack"},
+
+    {op_internal,         "#internal"},
+    {op_unhandled_warn,   "warn_unhandled"},
+    {op_unhandled_ignore, "ignore_unhandled"}
 };
+
+typedef struct
+{
+    enum 
+    {
+        unhandled_warn,
+        unhandled_ignore
+    } unhandled;
+} Flags;
+
+char * strcase(char h[])
+{
+    char * switched = malloc(strlen(h));
+    for (int i = 0; i < strlen(h); i++)
+    {
+        if (h[i] <= 122 && h[i] >= 97)
+        {
+            switched[i] = h[i] - 32;
+        }
+        else if (h[i] <= 90 && h[i] >= 65)
+        {
+            switched[i] = h[i] + 32;
+        }
+        else
+        {
+            switched[i] = h[i];
+        }
+        
+    }
+    return(switched);
+}
 
 Operations get_op(char * kw)
 {
@@ -116,10 +189,11 @@ Operations get_op(char * kw)
     const int num_keywords = sizeof(reserved) / sizeof(keyword);
     for (int i = 0; i < num_keywords; i++)
     {
-        if (!strcmp(kw, reserved[i].word))
+        if (!strcmp(kw, reserved[i].word) || !strcmp(strcase(kw), reserved[i].word))
         {
             return(reserved[i].op);
         }
+
     }
     return(op_null);
 }
@@ -167,11 +241,11 @@ struct _FuncNode {
     struct _FuncNode * func; // Store pointer to next function head
 };
 
-struct _RetNode {
+struct _CallNode {
     // Used for return stack (stores return addresses on each function call)
     Type type;
     struct _OpNode * ret;
-    struct _RetNode * ptr;
+    struct _CallNode * ptr;
 };
 
 /* struct _ConstNode {
@@ -194,9 +268,9 @@ struct _FuncNode FuncInitialize(void) {
     return(to_init);
 }
 
-struct _RetNode RetInitialize(void) {
+struct _CallNode CallInitialize(void) {
     // Initialize empty return stack
-    struct _RetNode to_init;
+    struct _CallNode to_init;
     to_init.type = head;
     to_init.ptr = NULL;
     to_init.ret = NULL;
@@ -221,9 +295,9 @@ struct _FuncNode * _FuncWalk(struct _FuncNode * n) {
     return(curr);
 }
 
-struct _RetNode * _RetWalk(struct _RetNode * n) {
+struct _CallNode * _CallWalk(struct _CallNode * n) {
     // Returns pointer to last node in return stack
-    struct _RetNode * curr = n;
+    struct _CallNode * curr = n;
     while (curr->ptr != NULL) {
         curr = curr->ptr;
     }
@@ -271,18 +345,18 @@ struct _FuncNode * FuncPush(struct _FuncNode * n, char h[]) {
     return(new_FuncNode);
 }
 
-struct _RetNode * RetPush(struct _RetNode * n, struct _OpNode * r) {
+struct _CallNode * CallPush(struct _CallNode * n, struct _OpNode * r) {
     // Push operation for return stack
-    struct _RetNode * new_RetNode = malloc(sizeof(struct _RetNode));
-    new_RetNode->ptr = NULL;
-    new_RetNode->type = link;
-    new_RetNode->ret = r;
+    struct _CallNode * new_CallNode = malloc(sizeof(struct _CallNode));
+    new_CallNode->ptr = NULL;
+    new_CallNode->type = link;
+    new_CallNode->ret = r;
 
-    struct _RetNode * last_RetNode = _RetWalk(n);
+    struct _CallNode * last_CallNode = _CallWalk(n);
 
-    last_RetNode->ptr = new_RetNode;
+    last_CallNode->ptr = new_CallNode;
 
-    return(new_RetNode);
+    return(new_CallNode);
 }
 
 /* struct _ConstNode * ConstPush(struct _ConstNode * n, char h[], int v) {
@@ -374,11 +448,11 @@ void Cleanup(struct _FuncNode * n) {
     n->func = NULL;
 }
 
-int RetLength(struct _RetNode * n) {
+int CallLength(struct _CallNode * n) {
     // Get the current length of ret stack
     int link_length = 0;
 
-    struct _RetNode * curr = n;
+    struct _CallNode * curr = n;
     while (curr->ptr != NULL) {
         curr = curr->ptr;
         link_length++;
@@ -386,10 +460,10 @@ int RetLength(struct _RetNode * n) {
     return(link_length);
 }
 
-struct _OpNode * RetPop(struct _RetNode * n) {
+struct _OpNode * CallPop(struct _CallNode * n) {
     // Pop operation for ret stack
-    struct _RetNode * curr = n;
-    struct _RetNode * next;
+    struct _CallNode * curr = n;
+    struct _CallNode * next;
 
     if (curr->ptr == NULL) {
         fprintf(stderr, "Error: ret stack contents insufficient for pop operation\n");
@@ -409,12 +483,12 @@ struct _OpNode * RetPop(struct _RetNode * n) {
     return(m);
 }
 
-void RetPrint(struct _RetNode * n)
+void CallPrint(struct _CallNode * n)
 {
-    struct _RetNode * curr = n;
+    struct _CallNode * curr = n;
     while (curr)
     {
-        printf("\n ** _RetNode **\n");
+        printf("\n ** _CallNode **\n");
         printf("    addr: %p\n", curr);
         printf("    type: %s\n", curr->type ? "link" : "head");
         printf("     ret: %p\n", curr->ret);

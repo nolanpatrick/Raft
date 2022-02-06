@@ -125,37 +125,33 @@ void parse_file(char * file_buffer, int flag_debug)
             new_token.line = line_count;
             new_token.loc = line_token_count;
 
-            if (!strcmp(token_string, "(")) // Capture comment as a single token
+            if (get_op(token_string) == op_comment_init) // Capture comment as a single token
             {
-                if (strstr(token_save_ptr, ")") == NULL)
+                if (strstr(token_save_ptr, get_keyword(op_comment_end)) == NULL)
                 {
                     throwError(global_filepath, new_token.line, new_token.loc, "missing ')' or malformed comment", "(");
                 } 
                 else
                 {
-                    char * token_string_comment = strtok_r(NULL, ")", &token_save_ptr);
+                    char * token_string_comment = strtok_r(NULL, get_keyword(op_comment_end), &token_save_ptr);
                     new_token.T_str = malloc(strlen(token_string_comment));
                     strcpy(new_token.T_str, token_string_comment);
                     new_token.op = op_comment;
-
-                    //printf(" [x] Instruction: '%s', %d\n", token_string_comment, new_token.op);
                 }
             }
 
-            else if (!strcmp(token_string, "s\"")) // Capture string literal as a single token
+            else if (get_op(token_string) == op_string_init) // Capture string literal as a single token
             {
-                if (strstr(token_save_ptr, "\"") == NULL)
+                if (strstr(token_save_ptr, get_keyword(op_string_end)) == NULL)
                 {
                     throwError(global_filepath, new_token.line, new_token.loc, "missing quote or malformed string literal", "\"");
                 }
                 else
                 {
-                    char * token_string_strlit = strtok_r(NULL, "\"", &token_save_ptr);
+                    char * token_string_strlit = strtok_r(NULL, get_keyword(op_string_end), &token_save_ptr);
                     new_token.T_str = malloc(strlen(token_string_strlit));
                     strcpy(new_token.T_str, token_string_strlit);
                     new_token.op = op_spush;
-
-                    //printf(" [x] Instruction: '%s', %d\n", token_string_strlit, new_token.op);
                 }
             }
 
@@ -176,20 +172,13 @@ void parse_file(char * file_buffer, int flag_debug)
                     {
                         new_token.op = op_func_decl;
                     }
-                    else
-                    {
-                        //printf(" [ ] Unknown token: '%s'\n", token_string);
-                    }
                 }
-
-                //printf(" [x] Instruction: '%s', %d\n", token_string, new_token.op);
             }
 
             raw_program[token_count] = new_token;
 
             token_string = strtok_r(NULL, " ", &token_save_ptr);
 
-            //line_count++;
             line_token_count++;
             token_count++;
         }
@@ -211,6 +200,12 @@ void build_program(Token *Program, int token_count, int flag_debug)
     {
         if (Program[i].op == op_func)
         {
+            if (IsFunc(&MainProgram, Program[i+1].T_str)) // make sure program hasn't already defined constant or function
+            {
+                fprintf(stderr, "Error: redefinition: '%s' has already been defined\n", Program[i+1].T_str);
+                exit(1);
+            }
+
             struct _FuncNode * function;
             function = FuncPush(&MainProgram, Program[i+1].T_str);
 
@@ -233,6 +228,12 @@ void build_program(Token *Program, int token_count, int flag_debug)
         }
         else if (Program[i].op == op_const)
         {
+            if (IsFunc(&MainProgram, Program[i+1].T_str)) // make sure program hasn't already defined constant or function
+            {
+                fprintf(stderr, "Error: redefinition: '%s' has already been defined\n", Program[i+1].T_str);
+                exit(1);
+            }
+
             struct _FuncNode * function;
             function = FuncPush(&MainProgram, Program[i+1].T_str);
 
@@ -258,9 +259,13 @@ void build_program(Token *Program, int token_count, int flag_debug)
     interpret_program(&MainProgram, flag_debug);
 }
 
-void interpret_program(struct _FuncNode * p, int flag_debug)
+void interpret_program(struct _FuncNode * p, int flag_debug) 
 {
-    struct _RetNode MainRetStack = RetInitialize();
+    // TODO: Move various program structure definitions to main
+    // to clean up program and make interactive mode easier to
+    // implement later.
+
+    struct _CallNode MainCallStack = CallInitialize();
 
     struct _FuncNode * ExecFunction;
 
@@ -268,22 +273,20 @@ void interpret_program(struct _FuncNode * p, int flag_debug)
 
     struct _Node MainStack = Initialize();
 
-    //RetPrint(&MainRetStack);
+    struct _Node RetStack = Initialize();
 
-    ExecFunction = p;
-    while (strcmp(ExecFunction->handle, "main"))
-    {
-        ExecFunction = ExecFunction->func;
-    }
-
-    if (strcmp(ExecFunction->handle, "main"))
+    if (!IsFunc(p, "main"))
     {
         fprintf(stderr, "Error: could not fund program entry point (main)\n");
         exit(1);
     }
     else
     {
-        if (flag_debug) printf("[debug] found entry point (main) at %p, function starts at %p\n", ExecFunction, ExecFunction->ptr);
+        ExecFunction = GetFuncAddr(p, "main");
+        if (flag_debug) 
+        {
+            printf("[debug] found entry point (main) at %p, function starts at %p\n", ExecFunction, ExecFunction->ptr);
+        }
     }
 
     ExecOp = ExecFunction->ptr;
@@ -300,12 +303,12 @@ void interpret_program(struct _FuncNode * p, int flag_debug)
                     if (next != NULL)
                     {
                         ExecOp->op = op_func_call;
-                        RetPush(&MainRetStack, ExecOp->ptr);
+                        CallPush(&MainCallStack, ExecOp->ptr);
                         if (flag_debug) 
                         {
                             printf("\n[debug] jumping to function '%s' at %p\n", ExecOp->data_s, next);
-                            printf("\n[debug] return stack length %d\n", RetLength(&MainRetStack));
-                            RetPrint(&MainRetStack);
+                            printf("\n[debug] return stack length %d\n", CallLength(&MainCallStack));
+                            CallPrint(&MainCallStack);
                         }
                         ExecOp = next->ptr;
                     }
@@ -313,7 +316,7 @@ void interpret_program(struct _FuncNode * p, int flag_debug)
                 }
                 else
                 {
-                    fprintf(stderr, "Error: unknown keyword '%s'", ExecOp->data_s);
+                    fprintf(stderr, "Error: unknown keyword '%s'\n", ExecOp->data_s);
                     exit(1);
                     break;
                 }
@@ -325,19 +328,27 @@ void interpret_program(struct _FuncNode * p, int flag_debug)
             }
             case op_return:
             {
-                if (RetLength(&MainRetStack) < 1)
+                if (CallLength(&MainCallStack) < 1)
                 {
-                    //fprintf(stderr, "Error: return stack contents insufficient for continued execution");
+                    if (LinkLength(&MainStack) > 0)
+                    {
+                        fprintf(stderr, "Error: unhandled data on the stack\n");
+                    }
                     exit(1);
                 }
-                ExecOp = RetPop(&MainRetStack);
-                if (flag_debug) printf("\n[debug] return stack length %d\n", RetLength(&MainRetStack));
+                if (LinkLength(&RetStack) > 0)
+                {
+                    fprintf(stderr, "Error: unhandled data on the return stack\n");
+                    exit(1);
+                }
+                ExecOp = CallPop(&MainCallStack);
+                if (flag_debug) printf("\n[debug] return stack length %d\n", CallLength(&MainCallStack));
                 if (flag_debug) printf("\n[debug] returning to %p\n", ExecOp);
                 break;
             }
             case op_func:
             {
-                fprintf(stderr, "Error: functions may not be declared within functions");
+                fprintf(stderr, "Error: functions may not be declared within functions\n");
                 exit(1);
                 break;
             }
@@ -347,11 +358,48 @@ void interpret_program(struct _FuncNode * p, int flag_debug)
                 ExecOp = ExecOp->ptr;
                 break;
             }
+            case op_ret_push:
+            {
+                if (LinkLength(&MainStack) < 1)
+                {
+                    fprintf(stderr, "Error: stack contents insufficient for operation '>R'\n");
+                    exit(1);
+                }
+                int a = LinkPop(&MainStack);
+                LinkPush(&RetStack, a);
+                ExecOp = ExecOp->ptr;
+                break;
+            }
+            case op_ret_pop:
+            {
+                if (LinkLength(&RetStack) < 1)
+                {
+                    fprintf(stderr, "Error: stack contents insufficient for operation 'R>'\n");
+                    exit(1);
+                }
+                int a = LinkPop(&RetStack);
+                LinkPush(&MainStack, a);
+                ExecOp = ExecOp->ptr;
+                break;
+            }
+            case op_ret_fetch:
+            {
+                if (LinkLength(&RetStack) < 1)
+                {
+                    fprintf(stderr, "Error: stack contents insufficient for operation 'R@'\n");
+                    exit(1);
+                }
+                int a = LinkPop(&RetStack);
+                LinkPush(&RetStack, a);
+                LinkPush(&MainStack, a);
+                ExecOp = ExecOp->ptr;
+                break;
+            }
             case op_add:
             {
                 if (LinkLength(&MainStack) < 2)
                 {
-                    fprintf(stderr, "Error: stack contents insufficient for operation '+'");
+                    fprintf(stderr, "Error: stack contents insufficient for operation '+'\n");
                     exit(1);
                 }
                 int a = LinkPop(&MainStack);
@@ -364,7 +412,7 @@ void interpret_program(struct _FuncNode * p, int flag_debug)
             {
                 if (LinkLength(&MainStack) < 2)
                 {
-                    fprintf(stderr, "Error: stack contents insufficient for operation '-'");
+                    fprintf(stderr, "Error: stack contents insufficient for operation '-'\n");
                     exit(1);
                 }
                 int b = LinkPop(&MainStack);
@@ -377,7 +425,7 @@ void interpret_program(struct _FuncNode * p, int flag_debug)
             {
                 if (LinkLength(&MainStack) < 2)
                 {
-                    fprintf(stderr, "Error: stack contents insufficient for operation '*'");
+                    fprintf(stderr, "Error: stack contents insufficient for operation '*'\n");
                     exit(1);
                 }
                 int b = LinkPop(&MainStack);
@@ -390,7 +438,7 @@ void interpret_program(struct _FuncNode * p, int flag_debug)
             {
                 if (LinkLength(&MainStack) < 2)
                 {
-                    fprintf(stderr, "Error: stack contents insufficient for operation '/'");
+                    fprintf(stderr, "Error: stack contents insufficient for operation '/'\n");
                     exit(1);
                 }
                 int b = LinkPop(&MainStack);
@@ -404,7 +452,7 @@ void interpret_program(struct _FuncNode * p, int flag_debug)
             {
                 if (LinkLength(&MainStack) < 2)
                 {
-                    fprintf(stderr, "Error: stack contents insufficient for operation '>'");
+                    fprintf(stderr, "Error: stack contents insufficient for operation '>'\n");
                     exit(1);
                 }
                 int b = LinkPop(&MainStack);
@@ -417,7 +465,7 @@ void interpret_program(struct _FuncNode * p, int flag_debug)
             {
                 if (LinkLength(&MainStack) < 2)
                 {
-                    fprintf(stderr, "Error: stack contents insufficient for operation '<'");
+                    fprintf(stderr, "Error: stack contents insufficient for operation '<'\n");
                     exit(1);
                 }
                 int b = LinkPop(&MainStack);
@@ -430,7 +478,7 @@ void interpret_program(struct _FuncNode * p, int flag_debug)
             {
                 if (LinkLength(&MainStack) < 2)
                 {
-                    fprintf(stderr, "Error: stack contents insufficient for operation '='");
+                    fprintf(stderr, "Error: stack contents insufficient for operation '='\n");
                     exit(1);
                 }
                 int b = LinkPop(&MainStack);
@@ -443,7 +491,7 @@ void interpret_program(struct _FuncNode * p, int flag_debug)
             {
                 if (LinkLength(&MainStack) < 2)
                 {
-                    fprintf(stderr, "Error: stack contents insufficient for operation 'and'");
+                    fprintf(stderr, "Error: stack contents insufficient for operation 'and'\n");
                     exit(1);
                 }
                 int b = LinkPop(&MainStack);
@@ -456,7 +504,7 @@ void interpret_program(struct _FuncNode * p, int flag_debug)
             {
                 if (LinkLength(&MainStack) < 2)
                 {
-                    fprintf(stderr, "Error: stack contents insufficient for operation 'or'");
+                    fprintf(stderr, "Error: stack contents insufficient for operation 'or'\n");
                     exit(1);
                 }
                 int b = LinkPop(&MainStack);
@@ -469,7 +517,7 @@ void interpret_program(struct _FuncNode * p, int flag_debug)
             {
                 if (LinkLength(&MainStack) < 2)
                 {
-                    fprintf(stderr, "Error: stack contents insufficient for operation 'swap'");
+                    fprintf(stderr, "Error: stack contents insufficient for operation 'swap'\n");
                     exit(1);
                 }
                 int b = LinkPop(&MainStack);
@@ -483,7 +531,7 @@ void interpret_program(struct _FuncNode * p, int flag_debug)
             {
                 if (LinkLength(&MainStack) < 1)
                 {
-                    fprintf(stderr, "Error: stack contents insufficient for operation 'dup'");
+                    fprintf(stderr, "Error: stack contents insufficient for operation 'dup'\n");
                     exit(1);
                 }
                 int a = LinkPop(&MainStack);
@@ -496,7 +544,7 @@ void interpret_program(struct _FuncNode * p, int flag_debug)
             {
                 if (LinkLength(&MainStack) < 2)
                 {
-                    fprintf(stderr, "Error: stack contents insufficient for operation 'over'");
+                    fprintf(stderr, "Error: stack contents insufficient for operation 'over'\n");
                     exit(1);
                 }
                 int b = LinkPop(&MainStack);
@@ -511,7 +559,7 @@ void interpret_program(struct _FuncNode * p, int flag_debug)
             {
                 if (LinkLength(&MainStack) < 3)
                 {
-                    fprintf(stderr, "Error: stack contents insufficient for operation 'rot'");
+                    fprintf(stderr, "Error: stack contents insufficient for operation 'rot'\n");
                     exit(1);
                 }
                 int c = LinkPop(&MainStack);
@@ -527,7 +575,7 @@ void interpret_program(struct _FuncNode * p, int flag_debug)
             {
                 if (LinkLength(&MainStack) < 1)
                 {
-                    fprintf(stderr, "Error: stack contents insufficient for operation 'drop'");
+                    fprintf(stderr, "Error: stack contents insufficient for operation 'drop'\n");
                     exit(1);
                 }
                 int a = LinkPop(&MainStack);
@@ -544,7 +592,7 @@ void interpret_program(struct _FuncNode * p, int flag_debug)
             {
                 if (LinkLength(&MainStack) < 1)
                 {
-                    fprintf(stderr, "Error: stack contents insufficient for operation 'iprint'");
+                    fprintf(stderr, "Error: stack contents insufficient for operation 'iprint'\n");
                     exit(1);
                 }
                 int a = LinkPop(&MainStack);
@@ -567,7 +615,7 @@ void interpret_program(struct _FuncNode * p, int flag_debug)
             {
                 if (LinkLength(&MainStack) < 2)
                 {
-                    fprintf(stderr, "Error: stack contents insufficient for operation 'spush'");
+                    fprintf(stderr, "Error: stack contents insufficient for operation 'spush'\n");
                     exit(1);
                 }
                 int a = LinkPop(&MainStack);
@@ -578,16 +626,16 @@ void interpret_program(struct _FuncNode * p, int flag_debug)
                 ExecOp = ExecOp->ptr;
                 break;
             }
-            case op_cpush:
-            {
-                fprintf(stderr, "Error: character push is not implemented");
-                exit(1);
-                break;
-            }
             case op_cprint:
             {
-                fprintf(stderr, "Error: 'cprint' is not implemented");
-                exit(1);
+                if (LinkLength(&MainStack) < 1)
+                {
+                    fprintf(stderr, "Error: stack contents insufficient for operation 'cprint'\n");
+                    exit(1);
+                }
+                int a = LinkPop(&MainStack);
+                printf("%c", a);
+                ExecOp = ExecOp->ptr;
                 break;
             }
             case op_cr:
@@ -602,39 +650,27 @@ void interpret_program(struct _FuncNode * p, int flag_debug)
                 ExecOp = ExecOp->ptr;
                 break;
             }
-            case op_anchor:
-            {
-                fprintf(stderr, "Error: anchors are no longer supported (this should be unreachable)");
-                exit(1);
-                break;
-            }
-            case op_goto:
-            {
-                fprintf(stderr, "Error: 'goto' is no longer supported");
-                exit(1);
-                break;
-            }
             case op_do:
             {
-                fprintf(stderr, "Error: loops are not yet implemented");
+                fprintf(stderr, "Error: loops are not yet implemented\n");
                 exit(1);
                 break;
             }
             case op_while:
             {
-                fprintf(stderr, "Error: loops are not yet implemented");
+                fprintf(stderr, "Error: loops are not yet implemented\n");
                 exit(1);
                 break;
             }
             case op_if:
             {
-                fprintf(stderr, "Error: conditionals are not yet implemented");
+                fprintf(stderr, "Error: conditionals are not yet implemented\n");
                 exit(1);
                 break;
             }
             case op_fi:
             {
-                fprintf(stderr, "Error: conditionals are not yet implemented");
+                fprintf(stderr, "Error: conditionals are not yet implemented\n");
                 exit(1);
                 break;
             }
@@ -649,298 +685,8 @@ void interpret_program(struct _FuncNode * p, int flag_debug)
             }
         }
     }
+    Cleanup(p);
 }
-/*
-void interpretProgram(Token *Program, int token_count, int flag_debug) {
-    if (flag_debug) printf("\n===== Starting Interpretation Stage =====\n");
-
-    int stack_height = 0;
-    int Stack[STACK_MAX];
-
-    if (flag_debug) {
-        printf("===== Goto anchors =====\n");
-        for (int i = 0; i < anchor_count; i++) {
-            printf("  Index: %d, Loc: %d\n", i, Anchor[i]);
-        } printf("========================\n");
-    }
-
-
-    int RuntimeAnchorStack[STACK_MAX];
-    int runtime_anchor_stack_height = 0;
-
-    int program_index = 0;
-    while (program_index < token_count) {
-        
-        switch (Program[program_index].OpType) {
-            int a, b, c, d;
-            int l, s;
-            int jump_valid;
-            int if_level;
-            case op_null:
-                //printf("[internal] found null token\n");
-                break;
-            case op_add:
-                if (stack_height < 2) {
-                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
-                }
-                b = Stack[--stack_height];
-                a = Stack[--stack_height];
-
-                Stack[stack_height++] = a + b;
-                break;
-
-            case op_subtract:
-                if (stack_height < 2) {
-                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
-                }
-                b = Stack[--stack_height];
-                a = Stack[--stack_height];
-
-                Stack[stack_height++] = a - b;
-                break;
-
-            case op_multiply:
-                if (stack_height < 2) {
-                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
-                }
-                b = Stack[--stack_height];
-                a = Stack[--stack_height];
-
-                Stack[stack_height++] = a * b;
-                break;
-
-            case op_divide:
-                if (stack_height < 2) {
-                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
-                }
-                b = Stack[--stack_height];
-                a = Stack[--stack_height];
-
-                Stack[stack_height++] = a / b;
-                Stack[stack_height++] = a % b;
-                break;
-
-            case op_lt:
-                if (stack_height < 2) {
-                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
-                }
-                b = Stack[--stack_height];
-                a = Stack[--stack_height];
-
-                Stack[stack_height++] = a < b;
-                break;
-
-            case op_gt:
-                if (stack_height < 2) {
-                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
-                }
-                b = Stack[--stack_height];
-                a = Stack[--stack_height];
-
-                Stack[stack_height++] = a > b;
-                break;
-
-            case op_eq:
-                if (stack_height < 2) {
-                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
-                }
-                b = Stack[--stack_height];
-                a = Stack[--stack_height];
-
-                Stack[stack_height++] = a == b;
-                break;
-
-            case op_and:
-                if (stack_height < 2) {
-                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
-                }
-                b = Stack[--stack_height];
-                a = Stack[--stack_height];
-
-                Stack[stack_height++] = a && b;
-                break;
-
-            case op_or:
-                if (stack_height < 2) {
-                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
-                }
-                b = Stack[--stack_height];
-                a = Stack[--stack_height];
-
-                Stack[stack_height++] = a || b;
-                break;
-            
-            case op_swap:
-                if (stack_height < 2) {
-                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
-                }
-                b = Stack[--stack_height];
-                a = Stack[--stack_height];
-
-                Stack[stack_height++] = b;
-                Stack[stack_height++] = a;
-                break;
-            
-            case op_dup:
-                if (stack_height < 1) {
-                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
-                }
-                a = Stack[--stack_height];
-
-                Stack[stack_height++] = a;
-                Stack[stack_height++] = a;
-                break;
-
-            case op_over:
-                if (stack_height < 2) {
-                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
-                }
-                b = Stack[--stack_height];
-                a = Stack[--stack_height];
-
-                Stack[stack_height++] = a;
-                Stack[stack_height++] = b;
-                Stack[stack_height++] = a;
-                break;
-
-            case op_rot:
-                if (stack_height < 3) {
-                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
-                }
-                c = Stack[--stack_height];
-                b = Stack[--stack_height];
-                a = Stack[--stack_height];
-
-                Stack[stack_height++] = b;
-                Stack[stack_height++] = c;
-                Stack[stack_height++] = a;
-                break;
-
-            case op_drop:
-                if (stack_height < 1) {
-                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
-                }
-                a = Stack[--stack_height];
-                break;
-
-            case op_ipush:
-                Stack[stack_height++] = Program[program_index].T_int;
-                break;
-
-            case op_spush:
-                l = strlen(Program[program_index].T_str) - 1;
-                for (int j = l; j >= 0; j--) {
-                    Stack[stack_height++] = Program[program_index].T_str[j];
-                }
-                Stack[stack_height++] = strlen(Program[program_index].T_str);
-                break;
-
-            case op_iprint:
-                if (stack_height < 1) {
-                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
-                }
-                a = Stack[--stack_height];
-                printf("%d", a);
-                break;
-
-            case op_sprint:
-                if (stack_height < 1) {
-                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
-                }
-                l = Stack[--stack_height];
-                for (int j = 0; j < l; j++) {
-                    printf("%c", Stack[--stack_height]);
-                }
-                //printf("\n");
-                break;
-
-            case op_anchor:
-                Anchor[Program[program_index].T_int] = program_index;
-                anchor_count++;
-                break; 
-
-            case op_goto:
-                if (anchor_count == 0) {
-                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "No anchor points have been defined", Program[program_index].T_str);
-                }
-                a = Stack[--stack_height];
-                if (a < anchor_count) {
-                    program_index = Anchor[a];
-                    break;
-                } else {
-                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "Invalid jump location", Program[program_index].T_str);
-                }
-
-            case op_do:
-                RuntimeAnchorStack[++runtime_anchor_stack_height] = program_index;
-                break;
-
-            case op_while:
-                if (runtime_anchor_stack_height == 0) {
-                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "Invalid loop: No corresponding 'do' statement has been defined", Program[program_index].T_str);
-                }
-                a = Stack[--stack_height];
-                if (a) {
-                    program_index = RuntimeAnchorStack[runtime_anchor_stack_height];
-                    break;
-                } else {
-                    runtime_anchor_stack_height--;
-                    break;
-                }
-                
-            case op_if:
-                if (stack_height < 1) {
-                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "Stack contents insufficient for operation", Program[program_index].T_str);
-                }
-                if_level = 1;
-                s = program_index + 1;
-                while (if_level > 0) {
-                    if (Program[s].OpType == op_if) if_level++;
-                    else if (Program[s].OpType == op_fi) if_level--;
-                    s++;
-                }
-                a = Stack[--stack_height];
-                if (!a) {
-                    program_index = s - 1;
-                }
-                break;
-                
-            case op_fi:
-                break;            
-            
-            case op_dstack:
-                if (!flag_debug) {
-                    throwError(global_filepath, Program[program_index].line, Program[program_index].loc, "Stack debug not allowed outside of debug mode", Program[program_index].T_str);
-                }
-                printf("=== start dstack ===\n -> called at loc: %d\n -> current state (%d): [", program_index, stack_height);
-                for (int j = 0; j < stack_height; j++){
-                    printf(" %d ", Stack[j]);
-                } printf("] (top)\n====================");
-                break;
-                
-
-            case op_cr:
-                printf("\n");
-                break;
-
-            case op_nbsp:
-                printf(" ");
-                break;
-
-            default:
-                break;
-
-        }
-        program_index++;
-    }
-    if (stack_height > 0) {
-        printf("[WARN] Unhandled data on stack: ");
-        for (int j = 0; j < stack_height; j++) {
-            printf("%d ", Stack[j]);
-        }
-    }
-}
-*/
 
 void throwError(const char *filename, int line, int token, char *message, char *operator)
 {

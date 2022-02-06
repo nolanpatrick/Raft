@@ -1,0 +1,12 @@
+( Example showing Forth code running natively in Raft )
+
+: QUADRATIC ( a b c x -- n )
+    ( borrowed from https://www.forth.com/starting-forth/5-fixed-point-arithmetic/)
+    >R SWAP ROT R@ * + R> * +
+;
+
+func main
+    2 7 9 3
+    QUADRATIC .
+    33 EMIT CR
+end
