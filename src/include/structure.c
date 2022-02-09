@@ -6,9 +6,13 @@ typedef enum
     op_comment,
     op_return,
 
+    // Library / Multi-file support
+    op_include,
+
     // Delimiters (used in parsing stage 1 only)
     op_comment_init,
     op_comment_end,
+    op_comment_line,
     op_string_init,
     op_string_end,
 
@@ -71,28 +75,26 @@ typedef enum
 
     // Debugging
     op_dstack,
-
-    // Internal flags
-    op_internal,
-    op_unhandled_warn,
-    op_unhandled_ignore
 } Operations;
 
 typedef struct
 {
     Operations op;
-    char * word;
+    char word[32];
 } keyword;
 
-const keyword reserved[] = 
+keyword reserved[] = 
 {
     {op_null,       "__null"},
     {op_comment,    "__comment"},
     {op_return,     "end"},
     {op_return,     ";"},  // Forth syntax
 
+    {op_include,     "include"},
+
     {op_comment_init, "("},
     {op_comment_end,  ")"},
+    {op_comment_line, "\\"},
     {op_string_init,  "s\""},
     {op_string_end,   "\""},
 
@@ -145,25 +147,12 @@ const keyword reserved[] =
     {op_fi,         "fi"},
 
     {op_dstack,     "dstack"},
-
-    {op_internal,         "#internal"},
-    {op_unhandled_warn,   "warn_unhandled"},
-    {op_unhandled_ignore, "ignore_unhandled"}
 };
-
-typedef struct
-{
-    enum 
-    {
-        unhandled_warn,
-        unhandled_ignore
-    } unhandled;
-} Flags;
 
 char * strcase(char h[])
 {
-    char * switched = malloc(strlen(h));
-    for (int i = 0; i < strlen(h); i++)
+    char * switched = malloc(strlen(h) + 1);
+    for (int i = 0; i < (int) strlen(h) + 1; i++)
     {
         if (h[i] <= 122 && h[i] >= 97)
         {
@@ -182,19 +171,45 @@ char * strcase(char h[])
     return(switched);
 }
 
+int safe_strcmp(char a[], char b[])
+{
+    // Returns (1) if strings match, (0) if they don't.
+    int n = 0;
+    if (strlen(a) == strlen(b))
+    {
+        n = strlen(a);
+    }
+    else
+    {
+        return(0);
+    }
+
+    for (int i = 0; i < n; i++)
+    {
+        if (a[i] != b[i])
+        {
+            return(0);
+        }
+    }
+    return(1);
+}
+
 Operations get_op(char * kw)
 {
     // This idea is borrowed from StackOverflow user 'plinth'
 
     const int num_keywords = sizeof(reserved) / sizeof(keyword);
+
+    char * rev = strcase(kw);
     for (int i = 0; i < num_keywords; i++)
     {
-        if (!strcmp(kw, reserved[i].word) || !strcmp(strcase(kw), reserved[i].word))
+        if (safe_strcmp(kw, reserved[i].word) || safe_strcmp(rev, reserved[i].word))
         {
+            free(rev);
             return(reserved[i].op);
         }
-
     }
+    free(rev);
     return(op_null);
 }
 
@@ -229,7 +244,7 @@ struct _OpNode {
     Type type;
     Operations op;
     int data_i;
-    char * data_s;
+    char data_s[255];
     struct _OpNode * ptr;
 };
 
@@ -247,13 +262,6 @@ struct _CallNode {
     struct _OpNode * ret;
     struct _CallNode * ptr;
 };
-
-/* struct _ConstNode {
-    Type type;
-    char handle[32];
-    int value;
-    struct _ConstNode * ptr;
-}; */
 
 // ===== FUNCTIONS FOR LINKED LISTS =====
 
@@ -276,15 +284,6 @@ struct _CallNode CallInitialize(void) {
     to_init.ret = NULL;
     return(to_init);
 }
-/* 
-struct _ConstNode ConstInitialize(void) {
-    // Initialize empty const stack
-    struct _ConstNode to_init;
-    strcpy(to_init.handle, "head");
-    to_init.type = head;
-    to_init.ptr = NULL;
-    return(to_init);
-} */
 
 struct _FuncNode * _FuncWalk(struct _FuncNode * n) {
     // Returns pointer to last node in function stack
@@ -303,15 +302,6 @@ struct _CallNode * _CallWalk(struct _CallNode * n) {
     }
     return(curr);
 }
-
-/* struct _ConstNode * _ConstWalk(struct _ConstNode * n) {
-    // Returns pointer to last node in const stack
-    struct _ConstNode * curr = n;
-    while (curr->ptr != NULL) {
-        curr = curr->ptr;
-    }
-    return(curr);
-} */
 
 struct _OpNode * _OpWalk(struct _FuncNode * n) {
     // Returns pointer to last node in operation chain
@@ -337,6 +327,7 @@ struct _FuncNode * FuncPush(struct _FuncNode * n, char h[]) {
     struct _OpNode * op_head = malloc(sizeof(struct _OpNode));
     op_head->op = op_func_init;
     op_head->data_i = 0;
+    memset(op_head->data_s, 0, 255);
     op_head->ptr = NULL;
     op_head->type = head;
 
@@ -359,37 +350,11 @@ struct _CallNode * CallPush(struct _CallNode * n, struct _OpNode * r) {
     return(new_CallNode);
 }
 
-/* struct _ConstNode * ConstPush(struct _ConstNode * n, char h[], int v) {
-    // Push operation for const stack
-    struct _ConstNode * new_ConstNode = malloc(sizeof(struct _ConstNode));
-    strcpy(new_ConstNode->handle, h);
-    new_ConstNode->ptr = NULL;
-    new_ConstNode->type = link;
-    new_ConstNode->value = v;
-    
-    struct _ConstNode * last_ConstNode = _ConstWalk(n);
-
-    last_ConstNode->ptr = new_ConstNode;
-
-    return(new_ConstNode);
-} */
-
-/* int ConstPeek(struct _ConstNode * n, char h[]) {
-    struct _ConstNode * curr = n;
-
-    while (curr) {
-        if (!strcmp(curr->handle, h) && curr->type == link) {
-            return (curr->value);
-        }
-        curr = curr->ptr;
-    }
-    return(0);
-} */
-
 struct _OpNode * OpPush(struct _FuncNode * n, Operations o) {
     // Push operation for operation chain within function
     struct _OpNode * new_OpNode = malloc(sizeof(struct _OpNode));
     new_OpNode->data_i = 0;
+    memset(new_OpNode->data_s, 0, 255);
     new_OpNode->op = o;
     new_OpNode->ptr = NULL;
     new_OpNode->type = link;
@@ -405,6 +370,7 @@ struct _OpNode * OpPushInt(struct _FuncNode * n, Operations o, int i) {
     // Push operation for operation chain within function
     struct _OpNode * new_OpNode = malloc(sizeof(struct _OpNode));
     new_OpNode->data_i = i;
+    memset(new_OpNode->data_s, 0, 255);
     new_OpNode->op = o;
     new_OpNode->ptr = NULL;
     new_OpNode->type = link;
@@ -419,8 +385,9 @@ struct _OpNode * OpPushInt(struct _FuncNode * n, Operations o, int i) {
 struct _OpNode * OpPushStr(struct _FuncNode * n, Operations o, char * s) {
     // Push operation for operation chain within function
     struct _OpNode * new_OpNode = malloc(sizeof(struct _OpNode));
-    new_OpNode->data_s = malloc(strlen(s));
+    //new_OpNode->data_s = malloc(strlen(s));
     strcpy(new_OpNode->data_s, s);
+    new_OpNode->data_i = 0;
     new_OpNode->op = o;
     new_OpNode->ptr = NULL;
     new_OpNode->type = link;
@@ -438,6 +405,7 @@ void Cleanup(struct _FuncNode * n) {
         struct _OpNode * curr_OpNode = curr_FuncNode->ptr;
         while (curr_OpNode->ptr != NULL) {
             struct _OpNode * next_OpNode = curr_OpNode->ptr;
+            //free(curr_OpNode->data_s);
             free(curr_OpNode);
             curr_OpNode = next_OpNode;
         }

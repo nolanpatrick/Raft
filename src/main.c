@@ -7,6 +7,7 @@
 
 #define FILE_BUF_MAX 640000 // 640 KB
 //#define STACK_MAX 10240
+#define FILE_TOKEN_MAX 1024
 
 char *version_string = "0.5.0";
 char global_filepath[1024];
@@ -14,7 +15,7 @@ char global_filepath[1024];
 typedef struct // Program token
 {
     int   T_int;
-    char *T_str;
+    char T_str[255];
     int line;
     int loc;
     Operations op;
@@ -24,11 +25,11 @@ typedef struct // Program token
 
 int main(int argc, char *argv[]);
 
-void parseTokens(char *file_buffer, int flag_debug);
+void append_file_to_program(struct _FuncNode * dest, char srcpath[], int flag_debug); // pipeline from file path to initialized program memory map
 
-void parse_file(char * file_buffer, int flag_buffer);
+int parse_file(Token * container, char * file_buffer, int flag_buffer);
 
-void build_program(Token *Program, int token_count, int flag_debug);
+void build_program(struct _FuncNode * program_memory, Token * program_tokens, int token_count, int flag_debug);
 
 void interpret_program(struct _FuncNode * p, int flag_debug);
 
@@ -42,69 +43,93 @@ int main(int argc, char *argv[])
 {
 
     int flag_debug = 0;    // Show parsing stages and debug info if enabled
-    int flag_run = 0;      // Whether or not to begin parsing and execution
 
     if (argc == 1) helpMessage();
 
-    for (int i = 0; i < argc; i++)
+    for (int i = 1; i < argc; i++)
     {
         // TODO: Restructure argv parsing to be more reliable and consistent
-        if (!strcmp(argv[i], "-r") && argv[i+1] == NULL)
-        {
-            helpMessage();
-            printf("\nError: please provide a path to the input file.\n");
-            exit(1);
-        }
-        if (!strcmp(argv[i], "-r") && argv[i+1] != NULL)
-        {
-            strcpy(global_filepath, argv[i+1]);
-            flag_run = 1;
-        }
-        if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help"))
-        {
-            helpMessage();
-            exit(0);
-        }
         if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "--debug"))
         {
             printf("[WARN] Enabled debugging mode\n");
             flag_debug = 1;
         }
-
-    }
-    if (flag_run)
-    {
-        if (flag_debug) printf("[INFO] Reading %s\n", global_filepath);
-        FILE *fp = fopen(global_filepath, "r");
-
-        if (fp == NULL)
+        else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help"))
         {
-            printf("Error: could not read file: \'%s\'", global_filepath);
+            helpMessage();
+            exit(0);
         }
         else
         {
-            // Read file
-            char file_buffer[FILE_BUF_MAX];
-
-            int file_index = 0;
-            while (fscanf(fp, "%c", &file_buffer[file_index]) != EOF) file_index++;
-            file_buffer[file_index] = '\0';
-
-            fclose(fp);
-
-            parse_file(file_buffer, flag_debug);
+            if (i != argc-1)
+            {
+                helpMessage();
+                fprintf(stderr, "Error: unrecognized flag: '%s'\n", argv[i]);
+                exit(1);
+            }
         }
+    }
+
+    memcpy(global_filepath, argv[argc-1], strlen(argv[argc-1]));
+
+    if (argc > 1)
+    {
+        if (flag_debug) printf("[INFO] Reading %s\n", global_filepath);
+
+        struct _FuncNode program_memory = FuncInitialize();
+
+        append_file_to_program(&program_memory, global_filepath, flag_debug);
+
+        if (flag_debug) MemMapPrint(&program_memory);
+
+        interpret_program(&program_memory, flag_debug);
+
+        Cleanup(&program_memory);
     }
     return 0;
 }
 
-void parse_file(char * file_buffer, int flag_debug)
+void append_file_to_program(struct _FuncNode * dest, char srcpath[], int flag_debug)
+{
+    // Appends a new set of instructions to the program, parsed from the given
+    // input file path.
+    if (strlen(srcpath) < 1)
+    {
+        fprintf(stderr, "Error: append_to_program(): path is empty\n");
+        exit(1);
+    }
+
+    FILE * _fp = fopen(srcpath, "r");
+    
+    if (_fp == NULL)
+    {
+        fprintf(stderr, "Error: append_to_program(): could not read file: %s\n", srcpath);
+        exit(1);
+    }
+
+    printf("[INFO] reading file %s\n", srcpath);
+    int file_index = 0;
+    char * file_buffer = malloc(FILE_BUF_MAX);
+    while (fscanf(_fp, "%c", &file_buffer[file_index]) != EOF) file_index++;
+    file_buffer[file_index] = '\0';
+    fclose(_fp);
+
+    Token * file_tokenized = malloc(FILE_TOKEN_MAX * sizeof(Token));
+
+    int file_token_count = parse_file(file_tokenized, file_buffer, flag_debug);
+
+    build_program(dest, file_tokenized, file_token_count, flag_debug);
+
+    free(file_tokenized);
+    free(file_buffer);
+}
+
+
+int parse_file(Token * container, char * file_buffer, int flag_debug)
 {
     if (flag_debug) printf(" *** Tokenization stage ***\n");
 
-    Token raw_program[1024];
-
-    int len_file = strlen(file_buffer);
+    Token * raw_program = container;
 
     int token_count = 0;
     int line_count = 0;
@@ -124,6 +149,7 @@ void parse_file(char * file_buffer, int flag_debug)
             Token new_token;
             new_token.line = line_count;
             new_token.loc = line_token_count;
+            //memset(new_token.T_str, 0, 255);
 
             if (get_op(token_string) == op_comment_init) // Capture comment as a single token
             {
@@ -134,10 +160,18 @@ void parse_file(char * file_buffer, int flag_debug)
                 else
                 {
                     char * token_string_comment = strtok_r(NULL, get_keyword(op_comment_end), &token_save_ptr);
-                    new_token.T_str = malloc(strlen(token_string_comment));
+                    //new_token.T_str = malloc(strlen(token_string_comment) + 1);
                     strcpy(new_token.T_str, token_string_comment);
                     new_token.op = op_comment;
                 }
+            }
+
+            else if (get_op(token_string) == op_comment_line) // Capture comment as a single token
+            {
+                char * token_string_comment = strtok_r(NULL, "\n", &token_save_ptr);
+                //new_token.T_str = malloc(strlen(token_string_comment) + 1);
+                strcpy(new_token.T_str, token_string_comment);
+                new_token.op = op_comment;
             }
 
             else if (get_op(token_string) == op_string_init) // Capture string literal as a single token
@@ -149,7 +183,7 @@ void parse_file(char * file_buffer, int flag_debug)
                 else
                 {
                     char * token_string_strlit = strtok_r(NULL, get_keyword(op_string_end), &token_save_ptr);
-                    new_token.T_str = malloc(strlen(token_string_strlit));
+                    //new_token.T_str = malloc(strlen(token_string_strlit) + 1);
                     strcpy(new_token.T_str, token_string_strlit);
                     new_token.op = op_spush;
                 }
@@ -157,7 +191,7 @@ void parse_file(char * file_buffer, int flag_debug)
 
             else
             {
-                new_token.T_str = malloc(strlen(token_string));
+                //new_token.T_str = malloc(strlen(token_string) + 1);
                 strcpy(new_token.T_str, token_string);
 
                 new_token.op = get_op(token_string);
@@ -167,6 +201,7 @@ void parse_file(char * file_buffer, int flag_debug)
                     if (strIsNumeric(token_string))
                     {
                         new_token.op = op_ipush;
+                        //strncpy(new_token.T_str, "", 1);
                     } 
                     else if (raw_program[token_count].op == op_func)
                     {
@@ -174,6 +209,7 @@ void parse_file(char * file_buffer, int flag_debug)
                     }
                 }
             }
+            if (flag_debug) printf("Token: '%s', operation: '%s'\n", new_token.T_str, get_keyword(new_token.op));
 
             raw_program[token_count] = new_token;
 
@@ -187,76 +223,89 @@ void parse_file(char * file_buffer, int flag_debug)
 
         line_token_count = 0;
     }
-    build_program(raw_program, token_count, flag_debug);
+    return (token_count);
 }
 
-void build_program(Token *Program, int token_count, int flag_debug)
+void build_program(struct _FuncNode * program_memory, Token * program_tokens, int token_count, int flag_debug)
 {
     if (flag_debug) printf("\n===== Starting Classification Stage =====\n");
 
-    struct _FuncNode MainProgram = FuncInitialize();
+    //struct _FuncNode program_memory = FuncInitialize();
 
     for (int i = 0; i < token_count - 1; i++)
     {
-        if (Program[i].op == op_func)
+        //printf("TOKEN: %s\n", program_tokens[i].T_str);
+        if (program_tokens[i].op == op_include)
         {
-            if (IsFunc(&MainProgram, Program[i+1].T_str)) // make sure program hasn't already defined constant or function
+            int k = i + 1;
+
+            append_file_to_program(program_memory, program_tokens[k].T_str, flag_debug);
+
+            i = k;
+        }
+        else if (program_tokens[i].op == op_func)
+        {
+            if (IsFunc(program_memory, program_tokens[i+1].T_str)) // make sure program hasn't already defined constant or function
             {
-                fprintf(stderr, "Error: redefinition: '%s' has already been defined\n", Program[i+1].T_str);
+                fprintf(stderr, "Error: redefinition: '%s' has already been defined\n", program_tokens[i+1].T_str);
                 exit(1);
             }
 
             struct _FuncNode * function;
-            function = FuncPush(&MainProgram, Program[i+1].T_str);
+            function = FuncPush(program_memory, program_tokens[i+1].T_str);
 
             int k = i + 2;
 
-            while (Program[k].op != op_return)
+            while (program_tokens[k].op != op_return)
             {
-                if (Program[k].op == op_ipush)
+                if (program_tokens[k].op == op_ipush)
                 {
-                    OpPushInt(function, Program[k].op, strtol(Program[k].T_str, NULL, 10));
+                    OpPushInt(function, program_tokens[k].op, strtol(program_tokens[k].T_str, NULL, 10));
                 }
                 else
                 {
-                    OpPushStr(function, Program[k].op, Program[k].T_str);
+                    OpPushStr(function, program_tokens[k].op, program_tokens[k].T_str);
                 }
                 k++;
             }
             OpPush(function, op_return);
             i = k;
         }
-        else if (Program[i].op == op_const)
+        else if (program_tokens[i].op == op_const)
         {
-            if (IsFunc(&MainProgram, Program[i+1].T_str)) // make sure program hasn't already defined constant or function
+            if (IsFunc(program_memory, program_tokens[i+1].T_str)) // make sure program hasn't already defined constant or function
             {
-                fprintf(stderr, "Error: redefinition: '%s' has already been defined\n", Program[i+1].T_str);
+                fprintf(stderr, "Error: redefinition: '%s' has already been defined\n", program_tokens[i+1].T_str);
                 exit(1);
             }
 
             struct _FuncNode * function;
-            function = FuncPush(&MainProgram, Program[i+1].T_str);
+            function = FuncPush(program_memory, program_tokens[i+1].T_str);
 
             int k = i + 2;
 
-            while (Program[k].op != op_return)
+            while (program_tokens[k].op != op_return)
             {
-                if (Program[k].op == op_ipush)
+                if (program_tokens[k].op == op_ipush)
                 {
-                    OpPushInt(function, Program[k].op, strtol(Program[k].T_str, NULL, 10));
+                    OpPushInt(function, program_tokens[k].op, strtol(program_tokens[k].T_str, NULL, 10));
                 }
                 else
                 {
-                    OpPushStr(function, Program[k].op, Program[k].T_str);
+                    OpPushStr(function, program_tokens[k].op, program_tokens[k].T_str);
                 }
                 k++;
             }
             OpPush(function, op_return);
             i = k;
+        }
+        else if (program_tokens[i].op != op_comment)
+        {
+            fprintf(stderr, "Error: instructions outside of function or constant declarations are not allowed at the root level: '%s'\n", program_tokens[i].T_str);
+            exit(1);
         }
     }
-    if (flag_debug) MemMapPrint(&MainProgram);
-    interpret_program(&MainProgram, flag_debug);
+    //if (flag_debug) MemMapPrint(program_memory);
 }
 
 void interpret_program(struct _FuncNode * p, int flag_debug) 
@@ -277,7 +326,7 @@ void interpret_program(struct _FuncNode * p, int flag_debug)
 
     if (!IsFunc(p, "main"))
     {
-        fprintf(stderr, "Error: could not fund program entry point (main)\n");
+        fprintf(stderr, "Error: could not find program entry point (main)\n");
         exit(1);
     }
     else
@@ -346,7 +395,49 @@ void interpret_program(struct _FuncNode * p, int flag_debug)
                 if (flag_debug) printf("\n[debug] returning to %p\n", ExecOp);
                 break;
             }
+            case op_include:
+            {
+                fprintf(stderr, "Error: including files is not allowed inside of functions\n");
+                exit(1);
+                break;
+            }
+            case op_comment_init:
+            {
+                fprintf(stderr, "Error: unmatched comment delimiter '('\n");
+                exit(1);
+                break;
+            }
+            case op_comment_end:
+            {
+                fprintf(stderr, "Error: unmatched comment delimiter ')'\n");
+                exit(1);
+                break;
+            }
+            case op_comment_line:
+            {
+                fprintf(stderr, "Error: erroneous line comment delimiter '\\'\n");
+                exit(1);
+                break;
+            }
+            case op_string_init:
+            {
+                fprintf(stderr, "Error: unmatched string delimiter 's\"'\n");
+                exit(1);
+                break;
+            }
+            case op_string_end:
+            {
+                fprintf(stderr, "Error: unmatched string delimiter '\"'\n");
+                exit(1);
+                break;
+            }
             case op_func:
+            {
+                fprintf(stderr, "Error: functions may not be declared within functions\n");
+                exit(1);
+                break;
+            }
+            case op_func_decl:
             {
                 fprintf(stderr, "Error: functions may not be declared within functions\n");
                 exit(1);
@@ -356,6 +447,32 @@ void interpret_program(struct _FuncNode * p, int flag_debug)
             {
                 if (flag_debug) printf("\n[debug] executing function at %p\n", ExecOp);
                 ExecOp = ExecOp->ptr;
+                break;
+            }
+            case op_func_call:
+            {
+                fprintf(stderr, "Error: interpret_function() :: op_func_call\n");
+                // TODO: handle function calls here rather than op_null above
+                exit(1);
+                break;
+            }
+            case op_const:
+            {
+                fprintf(stderr, "Error: constants may not be declared within functions\n");
+                exit(1);
+                break;
+            }
+            case op_const_decl:
+            {
+                fprintf(stderr, "Error: constants may not be declared within functions\n");
+                exit(1);
+                break;
+            }
+            case op_const_call:
+            {
+                fprintf(stderr, "Error: interpret_function() :: op_const_call\n");
+                // TODO: handle constant calls here rather than op_null above
+                exit(1);
                 break;
             }
             case op_ret_push:
@@ -578,7 +695,7 @@ void interpret_program(struct _FuncNode * p, int flag_debug)
                     fprintf(stderr, "Error: stack contents insufficient for operation 'drop'\n");
                     exit(1);
                 }
-                int a = LinkPop(&MainStack);
+                /*int a = */ LinkPop(&MainStack);
                 ExecOp = ExecOp->ptr;
                 break;
             }
@@ -685,7 +802,6 @@ void interpret_program(struct _FuncNode * p, int flag_debug)
             }
         }
     }
-    Cleanup(p);
 }
 
 void throwError(const char *filename, int line, int token, char *message, char *operator)
@@ -697,10 +813,8 @@ void throwError(const char *filename, int line, int token, char *message, char *
 void helpMessage()
 {
     printf("Raft interpreter %s\n", version_string);
-    printf("usage: raft [OPTIONS] -r <path_to_program>\n\n");
-    printf("required arguments:\n");
-    printf("  -r <file>       run program from file\n");
-    printf("\noptional arguments:\n");
+    printf("usage: raft [OPTIONS] <path_to_program>\n\n");
+    printf("optional arguments:\n");
     printf("  -d, --debug     run program in interpreter debugging mode\n");
     printf("  -h, --help      display this help message and exit\n");
 }

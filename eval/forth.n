@@ -1,12 +1,28 @@
 ( Example showing Forth code running natively in Raft )
 
+INCLUDE ./eval/libforth.n
+
 : QUADRATIC ( a b c x -- n )
     ( borrowed from https://www.forth.com/starting-forth/5-fixed-point-arithmetic/)
     >R SWAP ROT R@ * + R> * +
 ;
 
-func main
+: ?COOL ( -- )
+    s" Hell yeah it is!" sprint cr ;
+
+: main
     2 7 9 3
     QUADRATIC .
     33 EMIT CR
-end
+    ?COOL
+    1 1 / 
+    iprint s"  <- remainder" sprint cr
+    iprint s"  <- quotient"  sprint cr
+;
+
+( todo: check whether function names are reserved or available )
+( todo: division isn't implemented properly as 0 0 / returns a correct result but 1 1 / returns 0 and causes a stack unhandled error )
+
+: = s" this shouldn't be allowed" sprint cr ;
+
+( this program should not make it past parsing stage, but it will make it all the way to execution without being caught )

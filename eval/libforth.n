@@ -1,0 +1,15 @@
+\ Forth arithmetic macro library for Raft
+
+\ Arithmetic shortcuts
+
+: 1+ 1 + ; \ 1+ ( a -- a+1 )
+
+: 1- 1 - ; \ 1- ( a -- a-1 )
+
+: 2+ 2 + ; \ 2+ ( a -- a+2 )
+
+: 2- 2 - ; \ 2- ( a -- a-2 )
+
+: 2* 2 * ; \ 2* ( a -- a*2 )
+
+: 2/ 2 / ; \ 2/ ( a -- a/2 )
