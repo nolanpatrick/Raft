@@ -127,6 +127,9 @@ void append_file_to_program(struct _FuncNode * dest, char srcpath[], int flag_de
 
 int parse_file(Token * container, char * file_buffer, int flag_debug)
 {
+    // This function is temporary - it will be replaces with an fgets-based
+    // solution which should be more efficient and shorter. Also won't
+    // require a file buffer that holds the entire file contents.
     if (flag_debug) printf(" *** Tokenization stage ***\n");
 
     Token * raw_program = container;
@@ -239,6 +242,8 @@ void build_program(struct _FuncNode * program_memory, Token * program_tokens, in
         {
             int k = i + 1;
 
+            strcpy(global_filepath, program_tokens[k].T_str); // copy current filepath to global variable
+
             append_file_to_program(program_memory, program_tokens[k].T_str, flag_debug);
 
             i = k;
@@ -247,7 +252,7 @@ void build_program(struct _FuncNode * program_memory, Token * program_tokens, in
         {
             if (IsFunc(program_memory, program_tokens[i+1].T_str)) // make sure program hasn't already defined constant or function
             {
-                fprintf(stderr, "Error: redefinition: '%s' has already been defined\n", program_tokens[i+1].T_str);
+                fprintf(stderr, "Error: redefinition: '%s' has already been defined (%s)\n", program_tokens[i+1].T_str, global_filepath);
                 exit(1);
             }
 
@@ -275,7 +280,7 @@ void build_program(struct _FuncNode * program_memory, Token * program_tokens, in
         {
             if (IsFunc(program_memory, program_tokens[i+1].T_str)) // make sure program hasn't already defined constant or function
             {
-                fprintf(stderr, "Error: redefinition: '%s' has already been defined\n", program_tokens[i+1].T_str);
+                fprintf(stderr, "Error: redefinition: '%s' has already been defined (%s)\n", program_tokens[i+1].T_str, global_filepath);
                 exit(1);
             }
 
@@ -301,7 +306,7 @@ void build_program(struct _FuncNode * program_memory, Token * program_tokens, in
         }
         else if (program_tokens[i].op != op_comment)
         {
-            fprintf(stderr, "Error: instructions outside of function or constant declarations are not allowed at the root level: '%s'\n", program_tokens[i].T_str);
+            fprintf(stderr, "Error: instructions outside of function or constant declarations are not allowed at the root level: '%s' (%s)\n", program_tokens[i].T_str, global_filepath);
             exit(1);
         }
     }
